@@ -136,7 +136,7 @@ indentedFieldOptionalParser name parser = option [] $ indented *> fieldParser na
 -----------------------------------------------------------------
 
 -- TODO: Parse primiives
--- TODO: Parse locals
+-- TODO: Parse variables
 -- TODO: Parse conditions
 -- TODO: Parse tree like S (NP("John") VP("move" NP("an apple") PREP("into" NP("table")))
 
@@ -145,6 +145,9 @@ localVariableParser  = withPos $ do
     (name, value) <- fieldDataValueParser variableName noncommentStringParser
     return $ LocalVariable name value
 
+conditionParser :: IParser Condition
+conditionParser = withPos $ noncommentStringParser <* spaces <* optional commentParser
+
 ruleParser :: PrimitiveTemplates -> IParser Rule
 ruleParser primitives = withPos $ do
     _ <- fieldNameParser "rule"
@@ -152,7 +155,7 @@ ruleParser primitives = withPos $ do
     match <- indentedfieldDataParser "match" noncommentStringParser
     score <- indentedFieldOptionalDataParser "score" doubleParser 1.0
     locals <- indentedFieldOptionalParser "locals" localVariableParser
-    conditions <- indentedFieldOptionalParser "conditions" pTaxonomy
+    conditions <- indentedFieldOptionalParser "conditions" conditionParser
     further <- indentedFieldOptionalDataParser "further" noncommentStringParser ""
     primitives <- indentedFieldOptionalParser "primitives" pTaxonomy
     actions <- indentedFieldOptionalDataParser "actions" noncommentStringParser ""
@@ -163,8 +166,8 @@ rulesParser primitives = do
     rules <- fieldParser "rules" $ ruleParser primitives
     return $ Rules rules
 
-primitiveParser :: IParser PrimitiveTemplate
-primitiveParser = withPos $ do
+primitiveTemplateParser :: IParser PrimitiveTemplate
+primitiveTemplateParser = withPos $ do
     _ <- fieldNameParser "primitive"
     name <- indentedfieldDataParser "name" noncommentStringParser
     fields <- indentedfieldDataParser "fields" $ commaSeparatedparser noncommentStringParser
@@ -172,7 +175,7 @@ primitiveParser = withPos $ do
 
 primitivesParsers :: IParser PrimitiveTemplates
 primitivesParsers = withPos $ do
-    primitives <- fieldParser "primitives" primitiveParser
+    primitives <- fieldParser "primitives" primitiveTemplateParser
     return $ PrimitiveTemplates primitives
 
 aCDDBParsers :: IParser CDDB

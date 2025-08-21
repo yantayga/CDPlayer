@@ -20,9 +20,10 @@ type Match = String
 type Actions = String
 type Further = String
 type Nullable = Bool
+type Condition = String
 
 type Primitives = [Taxonomy]
-type Conditions = [Taxonomy]
+type Conditions = [Condition]
 
 data VariableName = VariableName Nullable Name deriving (Eq, Show)
 

@@ -48,8 +48,7 @@ rules:
             VP.NP == null
             ?destination isNull or ?destination.NP is_a PLACE
         primitives:
-            primitive:
-                type: MOVE
+            MOVE:
                 actor: NP
                 object: NP
                 source: ?source.NP
@@ -69,8 +68,7 @@ rules:
             VP.NP != null
             ?destination isNull or ?destination.NP is_a PLACE
         primitives:
-            primitive:
-                type: MOVE
+            MOVE:
                 actor: NP
                 object: VP.NP
                 source: ?source.NP
@@ -84,8 +82,7 @@ rules:
         score: 1.0
         further: VP(word: "move"), NP
         primitives:
-            primitive:
-                type: PROPERTY_SET
+            PROPERTY_SET:
                 object: parent.MOVE.actor
                 property: "manner"
                 value: "running"
@@ -102,8 +99,7 @@ rules:
 			VP.NP is_a PERSON or EMOTION
 			?agent.NP is_a PERSON or MOTIVATION
 		primitives:
-			primitive:
-				  type: INFLUENCE
+			INFLUENCE:
 				  influencer: ?agent.NP
 				  influenced: NP
 				  emotion: ?emotion.NP
@@ -118,8 +114,7 @@ rules:
         conditions:
             ?situation.NP is_a SITUATION
         primitives:
-            primitive:
-                type: PROPERTY_SET
+            PROPERTY_SET:
                 object: NP
                 property: "situation"
                 value: ?situation.NP
@@ -132,8 +127,7 @@ rules:
         conditions:
             VP.NP is_a PROGRAM
         primitives:
-            primitive:
-                type: PROPERTY_SET
+            PROPERTY_SET:
                 object: VP.NP
                 property: "state"
                 value: "started"
