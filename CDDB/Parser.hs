@@ -16,7 +16,7 @@ import CDDB.Types
 
 iParse :: IParser a -> SourceName -> String -> Either ParseError a
 iParse aParser source_name input =
-  runIndentParser aParser () source_name input
+    runIndentParser aParser () source_name input
 
 -----------------------------------------------------------------
 -- PrimitiveTemplate parsers
@@ -62,10 +62,10 @@ doubleParser = do
 -- Parser for comments (lines starting with #)
 commentParser :: IParser ()
 commentParser = do
-  char '#'
-  content <- many (noneOf "\n")
-  spaces
-  return ()
+    char '#'
+    content <- many (noneOf "\n")
+    spaces
+    return ()
 
 manyCommentsParser :: IParser [()]
 manyCommentsParser = many commentParser
@@ -76,7 +76,7 @@ commaSeparatedparser parser = sepBy parser (char ',')
 -- Parser for variable names
 variableName :: IParser VariableName
 variableName = do
-    qm <- option "" (string "?") 
+    qm <- option "" (string "?")
     name <- many (alphaNum <|> char '_')
     return $ VariableName (qm /= "") name
 
