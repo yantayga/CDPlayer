@@ -3,153 +3,149 @@
 # delete -- means remove from tree
 # scores are multiplied, and could be used to sort if several outcomes are possible
 # naming:
-#	"string literals"
-#	VP - types
-#	situation - nonnulllable variables or nonempty lists  of functions
-#	path? -- nullable variables or lists
-#	is_a checks variable type; var? is_a null == false
-#	VP.PREP(name: "from") - filter expression or pattern matching
+#   "string literals"
+#   VP - types
+#   situation - nonnulllable variables or nonempty lists  of functions
+#   path? -- nullable variables or lists
+#   is_a checks variable type; var? is_a null == false
+#   VP.PREP(name: "from") - filter expression or pattern matching
 # indentation is meaningful
 name: Semantic parser
 version: 1
 date: 21.10.1970 # Just fake date
 primitives:
-	primitive:
-		name: MOVE
-				actor:
-				object:
-				source:
-				destination:
-				path:
+    primitive:
+        name: MOVE
+		fields: actor, object, source, destination, path
 
 rules:
-	rule:
-		comment: Parse stops here
-		match: S ()
-		action: stop
+    rule:
+        comment: Parse stops here
+        match: S ()
+        actions: stop
 
-	rule:
-		comment: Parse active voice S (NP VP)
-		match: S (NP VP)
-		search: VP NP
-		actions: delete VP NP
+    rule:
+        comment: Parse active voice S (NP VP)
+        match: S (NP VP)
+        search: VP NP
+        actions: delete VP NP
 
-	rule:
-		comment: Parse passive voice S (NP VPP)
-		match: S (NP VPP)
-		search: S (VP.NP.PREP(name: "by" "with").PP VPP.VP(NP))
-		actions: delete VPP NP
+    rule:
+        comment: Parse passive voice S (NP VPP)
+        match: S (NP VPP)
+        search: S (VP.NP.PREP(name: "by" "with").PP VPP.VP(NP))
+        actions: delete VPP NP
 
-	rule:
-		comment: Move itself
-		match: VP(word: "move"), NP
-		score: 1.0
-		context:
-		locals:
-			source?: VP.PREP(name: "from")
-			destination?: VP.PREP(name: "into" "to")
-			path?: VP.PREP(name: "along")
-		conditions:
-			VP.NP == null
-			destination? isNull or destination?.NP is_a PLACE
-		primitives:
-			primitive:
-				type: MOVE
-				actor: NP
-				object: NP
-				source: source?.NP
-				destination: destination?.NP
-				path: path?.NP
-		actions: delete source? destination? path?
-		add-context: "moving"
+    rule:
+        comment: Move itself
+        match: VP(word: "move"), NP
+        score: 1.0
+        context:
+        locals:
+            source?: VP.PREP(name: "from")
+            destination?: VP.PREP(name: "into" "to")
+            path?: VP.PREP(name: "along")
+        conditions:
+            VP.NP == null
+            destination? isNull or destination?.NP is_a PLACE
+        primitives:
+            primitive:
+                type: MOVE
+                actor: NP
+                object: NP
+                source: source?.NP
+                destination: destination?.NP
+                path: path?.NP
+        actions: delete source? destination? path?
+        add-context: "moving"
 
-	rule:
-		comment: Move something
-		match: VP(word: "move"), NP
-		score: 1.0
-		context:
-		locals:
-			source?: VP.PREP(name: "from")
-			destination?: VP.PREP(name: "into" "to")
-			path?: VP.PREP(name: "along")
-		conditions:
-			VP.NP != null
-			destination? isNull or destination?.NP is_a PLACE
-		primitives:
-			primitive:
-				type: MOVE
-				actor: NP
-				object: VP.NP
-				source: source?.NP
-				destination: destination?.NP
-				path: path?.NP
-		actions: delete source? destination? path? VP.NP
-		add-context: "moving"
+    rule:
+        comment: Move something
+        match: VP(word: "move"), NP
+        score: 1.0
+        context:
+        locals:
+            source?: VP.PREP(name: "from")
+            destination?: VP.PREP(name: "into" "to")
+            path?: VP.PREP(name: "along")
+        conditions:
+            VP.NP != null
+            destination? isNull or destination?.NP is_a PLACE
+        primitives:
+            primitive:
+                type: MOVE
+                actor: NP
+                object: VP.NP
+                source: source?.NP
+                destination: destination?.NP
+                path: path?.NP
+        actions: delete source? destination? path? VP.NP
+        add-context: "moving"
 
-	rule:
-		comment: Run as move fase, parse "move" first
-		match: VP(word: "run"), NP
-		score: 1.0
-		context:
-		seacrh: VP(word: "move"), NP
-		primitives:
-			primitive:
-				type: PROPERTY_SET
-				object: parent.MOVE.actor
-				property: "manner"
-				value: "running"
+    rule:
+        comment: Run as move fase, parse "move" first
+        match: VP(word: "run"), NP
+        score: 1.0
+        context:
+        seacrh: VP(word: "move"), NP
+        primitives:
+            primitive:
+                type: PROPERTY_SET
+                object: parent.MOVE.actor
+                property: "manner"
+                value: "running"
 
-	rule:
-		  comment: Influence/convince
-		  match: VP(word: "move"), NP
-		  score: 0.6
-		  context:
-		  locals:
-				agent?: VP.PREP(name: "by" "with")
-				emotion?: VP.PREP(name: "with" "through")
-		  conditions:
-				VP.NP != null
-				VP.NP is_a PERSON or EMOTION
-				agent?.NP is_a PERSON or MOTIVATION
-		  primitives:
-				primitive:
-					  type: INFLUENCE
-					  influencer: agent?.NP
-					  influenced: NP
-					  emotion: emotion?.NP
-		  actions: delete agent? emotion?
-		  add-context: "persuasion"
+    rule:
+          comment: Influence/convince
+          match: VP(word: "move"), NP
+          score: 0.6
+          context:
+          locals:
+                agent?: VP.PREP(name: "by" "with")
+                emotion?: VP.PREP(name: "with" "through")
+          conditions:
+                VP.NP != null
+                VP.NP is_a PERSON or EMOTION
+                agent?.NP is_a PERSON or MOTIVATION
+          primitives:
+                primitive:
+                      type: INFLUENCE
+                      influencer: agent?.NP
+                      influenced: NP
+                      emotion: emotion?.NP
+          actions: delete agent? emotion?
+          add-context: "persuasion"
 
-	rule:
-		comment: Run into problems
-		match: VP(word: "run"), NP
-		score: 1.0
-		context:
-		locals:
-			situation?: VP.PREP(name: "into")
-		conditions:
-			situation?.NP is_a SITUATION
-		primitives:
-			primitive:
-				type: PROPERTY_SET
-				object: NP
-				property: "situation"
-				value: situation?.NP
-		actions: delete situation?
+    rule:
+        comment: Run into problems
+        match: VP(word: "run"), NP
+        score: 1.0
+        context:
+        locals:
+            situation?: VP.PREP(name: "into")
+        conditions:
+            situation?.NP is_a SITUATION
+        primitives:
+            primitive:
+                type: PROPERTY_SET
+                object: NP
+                property: "situation"
+                value: situation?.NP
+        actions: delete situation?
 
-	rule:
-		comment: Run program
-		match: VP(word: "run"), NP
-		score: 0.8
-		context:
-		conditions:
-			VP.NP is_a PROGRAM
-		primitives:
-			primitive:
-				type: PROPERTY_SET
-				object: VP.NP
-				property: "state"
-				value: "started"
-		actions: delete VP.NP
-		add-context: "technical"
+    rule:
+        comment: Run program
+        match: VP(word: "run"), NP
+        score: 0.8
+        context:
+        conditions:
+            VP.NP is_a PROGRAM
+        primitives:
+            primitive:
+                type: PROPERTY_SET
+                object: VP.NP
+                property: "state"
+                value: "started"
+        actions: delete VP.NP
+        add-context: "technical"
 
