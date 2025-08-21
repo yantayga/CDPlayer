@@ -91,7 +91,7 @@ rules:
 		match: VP(word: "run"), NP
 		score: 1.0
 		context:
-		apply: VP(word: "move"), NP
+		seacrh: VP(word: "move"), NP
 		primitives:
 			primitive:
 				type: PROPERTY_SET
