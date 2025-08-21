@@ -93,11 +93,11 @@ fieldDataParser name parser = do
     optional commentParser
     return value
 
-fieldParser :: Name -> IParser a -> IParser (String, [a])
+fieldParser :: Name -> IParser a -> IParser [a]
 fieldParser name parser = withPos $ do
     term <- fieldNameParser name
     subs <- many $ indented *> parser
-    return (term, subs)
+    return subs
 
 indentedfieldDataParser :: Name -> IParser a -> IParser a
 indentedfieldDataParser name parser = indented *> fieldDataParser name parser
@@ -106,10 +106,10 @@ indentedFieldOptionalDataParser :: Name -> IParser a -> a -> IParser a
 indentedFieldOptionalDataParser name parser defaultvalue = option defaultvalue $ indented *> fieldDataParser name parser
 
 indentedFieldParser:: Name -> IParser a -> IParser [a]
-indentedFieldParser name parser = fmap snd $ indented *> fieldParser name parser
+indentedFieldParser name parser = indented *> fieldParser name parser
 
 indentedFieldOptionalParser:: Name -> IParser a -> IParser [a]
-indentedFieldOptionalParser name parser = option [] $ fmap snd $ indented *> fieldParser name parser
+indentedFieldOptionalParser name parser = option [] $ indented *> fieldParser name parser
 
 -----------------------------------------------------------------
 -- Top parsers
@@ -134,7 +134,7 @@ ruleParser primitives = withPos $ do
 
 rulesParser :: PrimitiveTemplates -> IParser Rules
 rulesParser primitives = do
-    (name, rules) <- fieldParser "rules" $ ruleParser primitives
+    rules <- fieldParser "rules" $ ruleParser primitives
     return $ Rules rules
 
 primitiveParser :: IParser PrimitiveTemplate
@@ -146,7 +146,7 @@ primitiveParser = withPos $ do
 
 primitivesParsers :: IParser PrimitiveTemplates
 primitivesParsers = withPos $ do
-    (name, primitives) <- fieldParser "primitives" primitiveParser
+    primitives <- fieldParser "primitives" primitiveParser
     return $ PrimitiveTemplates primitives
 
 aCDDBParsers :: IParser CDDB
