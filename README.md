@@ -1,2 +1,2 @@
 # CDPlayer
-Playing with Conceptual Dependencies ides
+Playing with Conceptual Dependencies ideas
