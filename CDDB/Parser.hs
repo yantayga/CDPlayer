@@ -22,7 +22,7 @@ iParse aParser source_name input =
   runIndentParser aParser () source_name input
 
 -----------------------------------------------------------------
--- Primitive parsers
+-- PrimitiveTemplate parsers
 -----------------------------------------------------------------
 
 -- Parser for quoted strings
@@ -118,7 +118,7 @@ indentedFieldOptionalParser name parser = option [] $ fmap snd $ indented *> fie
 -- TODO: Parse 'locals' field
 -- TODO: Parse 'conditions' field
 -- TODO: Parse tree
-ruleParser :: Primitives -> IParser Rule
+ruleParser :: PrimitiveTemplates -> IParser Rule
 ruleParser primitives = withPos $ do
     _ <- fieldNameParser "rule"
     comment <- indentedFieldOptionalDataParser "comment" noncommentStringParser ""
@@ -128,22 +128,22 @@ ruleParser primitives = withPos $ do
     actions <- indentedFieldOptionalDataParser "actions" noncommentStringParser ""
     return $ Rule comment score match primitives actions
 
-rulesParser :: Primitives -> IParser Rules
+rulesParser :: PrimitiveTemplates -> IParser Rules
 rulesParser primitives = do
     (name, rules) <- fieldParser "rules" $ ruleParser primitives
     return $ Rules rules
 
-primitiveParser :: IParser Primitive
+primitiveParser :: IParser PrimitiveTemplate
 primitiveParser = withPos $ do
     _ <- fieldNameParser "primitive"
     name <- indentedfieldDataParser "name" noncommentStringParser
     fields <- indentedfieldDataParser "fields" $ commaSeparatedparser noncommentStringParser
-    return $ Primitive name fields
+    return $ PrimitiveTemplate name fields
 
-primitivesParsers :: IParser Primitives
+primitivesParsers :: IParser PrimitiveTemplates
 primitivesParsers = withPos $ do
     (name, primitives) <- fieldParser "primitives" primitiveParser
-    return $ Primitives primitives
+    return $ PrimitiveTemplates primitives
 
 aCDDBParsers :: IParser CDDB
 aCDDBParsers = do
