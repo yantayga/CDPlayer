@@ -1,4 +1,4 @@
-module Toy where
+module CDDB.Parser where
 
 import Text.Parsec hiding (State)
 import Text.Parsec.Indent
@@ -8,29 +8,10 @@ import qualified Data.Text as T
 import Data.Time
 import Data.Maybe
 
+import CDDB.Types
+
 -- Data types
-type IParser a = IndentParser String () a
 
-type Term = String
-data Taxonomy = Taxonomy Term [Taxonomy] deriving (Eq, Show)
-
-type Name = String
-type Version = Integer
-type Date = Maybe UTCTime
-
-type Comment = String
-type Score = Double
-type Match = String
-type Actions = String
-data Rule = Rule Comment Score Match [Taxonomy] Actions deriving (Eq, Show)
-
-data Rules = Rules [Rule] deriving (Eq, Show)
-
-data Primitive = Primitive Name [Name] deriving (Eq, Show)
-
-data Primitives = Primitives [Primitive] deriving (Eq, Show)
-
-data CDDB = CDDB Name Version Date Primitives Rules deriving (Eq, Show)
 
 -----------------------------------------------------------------
 -- Run parser
@@ -147,9 +128,9 @@ ruleParser primitives = withPos $ do
     actions <- indentedFieldOptionalDataParser "actions" noncommentStringParser ""
     return $ Rule comment score match primitives actions
 
-rulesParser :: IParser Rules
-rulesParser = do
-    (name, rules) <- fieldParser "rules" ruleParser
+rulesParser :: Primitives -> IParser Rules
+rulesParser primitives = do
+    (name, rules) <- fieldParser "rules" $ ruleParser primitives
     return $ Rules rules
 
 primitiveParser :: IParser Primitive
@@ -174,11 +155,12 @@ aCDDBParsers = do
     rules <- rulesParser primitives
     return $ CDDB name version date primitives rules
 
-parseCDDBFile :: FilePath -> IO (Either ParseError CDDB)
-parseCDDBFile path = do
-    fileContent <- readFile path
-    let res = iParse aCDDBParsers path fileContent
-    return res
+-----------------------------------------------------------------
+-- Top top parser
+-----------------------------------------------------------------
+
+parseCDDB :: FilePath -> String -> Either ParseError CDDB
+parseCDDB path content = iParse aCDDBParsers path content
 
 
 -- TODO: Remove
