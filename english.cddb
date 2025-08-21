@@ -40,7 +40,6 @@ rules:
         comment: Move itself
         match: VP(word: "move"), NP
         score: 1.0
-        context:
         locals:
             source?: VP.PREP(name: "from")
             destination?: VP.PREP(name: "into" "to")
@@ -57,13 +56,11 @@ rules:
                 destination: destination?.NP
                 path: path?.NP
         actions: delete source? destination? path?
-        add-context: "moving"
 
     rule:
         comment: Move something
         match: VP(word: "move"), NP
         score: 1.0
-        context:
         locals:
             source?: VP.PREP(name: "from")
             destination?: VP.PREP(name: "into" "to")
@@ -80,13 +77,11 @@ rules:
                 destination: destination?.NP
                 path: path?.NP
         actions: delete source? destination? path? VP.NP
-        add-context: "moving"
 
     rule:
         comment: Run as move fase, parse "move" first
         match: VP(word: "run"), NP
         score: 1.0
-        context:
         seacrh: VP(word: "move"), NP
         primitives:
             primitive:
@@ -96,31 +91,28 @@ rules:
                 value: "running"
 
     rule:
-          comment: Influence/convince
-          match: VP(word: "move"), NP
-          score: 0.6
-          context:
-          locals:
-                agent?: VP.PREP(name: "by" "with")
-                emotion?: VP.PREP(name: "with" "through")
-          conditions:
-                VP.NP != null
-                VP.NP is_a PERSON or EMOTION
-                agent?.NP is_a PERSON or MOTIVATION
-          primitives:
-                primitive:
-                      type: INFLUENCE
-                      influencer: agent?.NP
-                      influenced: NP
-                      emotion: emotion?.NP
-          actions: delete agent? emotion?
-          add-context: "persuasion"
+		comment: Influence/convince
+		match: VP(word: "move"), NP
+		score: 0.6
+		locals:
+			agent?: VP.PREP(name: "by" "with")
+			emotion?: VP.PREP(name: "with" "through")
+		conditions:
+			VP.NP != null
+			VP.NP is_a PERSON or EMOTION
+			agent?.NP is_a PERSON or MOTIVATION
+		primitives:
+			primitive:
+				  type: INFLUENCE
+				  influencer: agent?.NP
+				  influenced: NP
+				  emotion: emotion?.NP
+		actions: delete agent? emotion?
 
     rule:
         comment: Run into problems
         match: VP(word: "run"), NP
         score: 1.0
-        context:
         locals:
             situation?: VP.PREP(name: "into")
         conditions:
@@ -137,7 +129,6 @@ rules:
         comment: Run program
         match: VP(word: "run"), NP
         score: 0.8
-        context:
         conditions:
             VP.NP is_a PROGRAM
         primitives:
@@ -147,5 +138,4 @@ rules:
                 property: "state"
                 value: "started"
         actions: delete VP.NP
-        add-context: "technical"
 

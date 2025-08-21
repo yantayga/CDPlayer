@@ -78,7 +78,7 @@ commentParser = do
   return ""
 
 commaSeparatedparser :: IParser a -> IParser [a]
-commaSeparatedparser parser = sepBy parser (char ',') 
+commaSeparatedparser parser = sepBy parser (char ',')
 
 type Term = String
 data Taxonomy = Taxonomy Term [Taxonomy] deriving (Eq, Show)
@@ -132,8 +132,14 @@ indentedFieldParser name parser = fmap snd $ indented *> fieldParser name parser
 indentedFieldOptionalParser:: Name -> IParser a -> IParser [a]
 indentedFieldOptionalParser name parser = option [] $ fmap snd $ indented *> fieldParser name parser
 
-ruleParser :: IParser Rule
-ruleParser = withPos $ do
+-- TODO: Parse 'search' field
+-- TODO: Parse primiives
+-- TODO: Parse 'context' field
+-- TODO: Parse 'locals' field
+-- TODO: Parse 'conditions' field
+-- TODO: Parse tree
+ruleParser :: Primitives -> IParser Rule
+ruleParser primitives = withPos $ do
     _ <- fieldNameParser "rule"
     comment <- indentedFieldOptionalDataParser "comment" noncommentStringParser ""
     score <- indentedFieldOptionalDataParser "score" doubleParser 1.0
@@ -166,7 +172,7 @@ aCDDBParsers = do
     version <- fmap snd $ fieldDataParser "version" integerParser
     date <- fmap snd $ fieldDataParser "date" dateParser
     primitives <- primitivesParsers
-    rules <- rulesParser
+    rules <- rulesParser primitives
     return $ CDDB name version date primitives rules
 
 parseCDDBFile :: FilePath -> IO (Either ParseError CDDB)
