@@ -63,12 +63,15 @@ doubleParser = do
             return (expChar:expSign:expDigits)
 
 -- Parser for comments (lines starting with #)
-commentParser :: IParser String
+commentParser :: IParser ()
 commentParser = do
   char '#'
   content <- many (noneOf "\n")
   spaces
-  return ""
+  return ()
+  
+manyCommentsParser :: IParser [()]
+manyCommentsParser = many commentParser
 
 commaSeparatedparser :: IParser a -> IParser [a]
 commaSeparatedparser parser = sepBy parser (char ',')
@@ -80,7 +83,7 @@ commaSeparatedparser parser = sepBy parser (char ',')
 fieldNameParser :: Name -> IParser String
 fieldNameParser name = string name <* char ':' <* spaces <* optional commentParser
 
-fieldDataParser :: Name -> IParser a -> IParser (String, a)
+fieldDataParser :: Name -> IParser a -> IParser a
 fieldDataParser name parser = do
     res <- string name
     char ':'
@@ -88,7 +91,7 @@ fieldDataParser name parser = do
     value <- parser
     spaces
     optional commentParser
-    return (res, value)
+    return value
 
 fieldParser :: Name -> IParser a -> IParser (String, [a])
 fieldParser name parser = withPos $ do
@@ -97,10 +100,10 @@ fieldParser name parser = withPos $ do
     return (term, subs)
 
 indentedfieldDataParser :: Name -> IParser a -> IParser a
-indentedfieldDataParser name parser = fmap snd $ indented *> fieldDataParser name parser
+indentedfieldDataParser name parser = indented *> fieldDataParser name parser
 
 indentedFieldOptionalDataParser :: Name -> IParser a -> a -> IParser a
-indentedFieldOptionalDataParser name parser defaultvalue = option defaultvalue $ fmap snd $ indented *> fieldDataParser name parser
+indentedFieldOptionalDataParser name parser defaultvalue = option defaultvalue $ indented *> fieldDataParser name parser
 
 indentedFieldParser:: Name -> IParser a -> IParser [a]
 indentedFieldParser name parser = fmap snd $ indented *> fieldParser name parser
@@ -149,9 +152,9 @@ primitivesParsers = withPos $ do
 aCDDBParsers :: IParser CDDB
 aCDDBParsers = do
     many commentParser
-    name <- fmap snd $ fieldDataParser "name" noncommentStringParser
-    version <- fmap snd $ fieldDataParser "version" integerParser
-    date <- fmap snd $ fieldDataParser "date" dateParser
+    name <- fieldDataParser "name" noncommentStringParser
+    version <- fieldDataParser "version" integerParser
+    date <- fieldDataParser "date" dateParser
     primitives <- primitivesParsers
     rules <- rulesParser primitives
     return $ CDDB name version date primitives rules
