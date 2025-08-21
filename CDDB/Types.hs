@@ -5,8 +5,11 @@ import Data.Time
 
 type IParser a = IndentParser String () a
 
+-- TODO: Remove
+-------------------
 type Term = String
 data Taxonomy = Taxonomy Term [Taxonomy] deriving (Eq, Show)
+-------------------
 
 type Name = String
 type Version = Integer
