@@ -6,7 +6,7 @@
 #   "string literals"
 #   VP - types
 #   situation - nonnulllable variables or nonempty lists  of functions
-#   path? -- nullable variables or lists
+#   ?path -- nullable variables or lists
 #   is_a checks variable type; var? is_a null == false
 #   VP.PREP(name: "from") - filter expression or pattern matching
 # indentation is meaningful
@@ -41,42 +41,42 @@ rules:
         match: VP(word: "move"), NP
         score: 1.0
         locals:
-            source?: VP.PREP(name: "from")
-            destination?: VP.PREP(name: "into" "to")
-            path?: VP.PREP(name: "along")
+            ?source: VP.PREP(name: "from")
+            ?destination: VP.PREP(name: "into" "to")
+            ?path: VP.PREP(name: "along")
         conditions:
             VP.NP == null
-            destination? isNull or destination?.NP is_a PLACE
+            ?destination isNull or ?destination.NP is_a PLACE
         primitives:
             primitive:
                 type: MOVE
                 actor: NP
                 object: NP
-                source: source?.NP
-                destination: destination?.NP
-                path: path?.NP
-        actions: delete source? destination? path?
+                source: ?source.NP
+                destination: ?destination.NP
+                path: ?path.NP
+        actions: delete ?source ?destination ?path
 
     rule:
         comment: Move something
         match: VP(word: "move"), NP
         score: 1.0
         locals:
-            source?: VP.PREP(name: "from")
-            destination?: VP.PREP(name: "into" "to")
-            path?: VP.PREP(name: "along")
+            ?source: VP.PREP(name: "from")
+            ?destination: VP.PREP(name: "into" "to")
+            ?path: VP.PREP(name: "along")
         conditions:
             VP.NP != null
-            destination? isNull or destination?.NP is_a PLACE
+            ?destination isNull or ?destination.NP is_a PLACE
         primitives:
             primitive:
                 type: MOVE
                 actor: NP
                 object: VP.NP
-                source: source?.NP
-                destination: destination?.NP
-                path: path?.NP
-        actions: delete source? destination? path? VP.NP
+                source: ?source.NP
+                destination: ?destination.NP
+                path: ?path.NP
+        actions: delete ?source ?destination ?path VP.NP
 
     rule:
         comment: Run as move fase, parse "move" first
@@ -95,35 +95,35 @@ rules:
 		match: VP(word: "move"), NP
 		score: 0.6
 		locals:
-			agent?: VP.PREP(name: "by" "with")
-			emotion?: VP.PREP(name: "with" "through")
+			?agent: VP.PREP(name: "by" "with")
+			?emotion: VP.PREP(name: "with" "through")
 		conditions:
 			VP.NP != null
 			VP.NP is_a PERSON or EMOTION
-			agent?.NP is_a PERSON or MOTIVATION
+			?agent.NP is_a PERSON or MOTIVATION
 		primitives:
 			primitive:
 				  type: INFLUENCE
-				  influencer: agent?.NP
+				  influencer: ?agent.NP
 				  influenced: NP
-				  emotion: emotion?.NP
-		actions: delete agent? emotion?
+				  emotion: ?emotion.NP
+		actions: delete ?agent ?emotion
 
     rule:
         comment: Run into problems
         match: VP(word: "run"), NP
         score: 1.0
         locals:
-            situation?: VP.PREP(name: "into")
+            ?situation: VP.PREP(name: "into")
         conditions:
-            situation?.NP is_a SITUATION
+            ?situation.NP is_a SITUATION
         primitives:
             primitive:
                 type: PROPERTY_SET
                 object: NP
                 property: "situation"
-                value: situation?.NP
-        actions: delete situation?
+                value: ?situation.NP
+        actions: delete ?situation
 
     rule:
         comment: Run program

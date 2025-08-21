@@ -19,12 +19,18 @@ type Score = Double
 type Match = String
 type Actions = String
 type Further = String
+type Nullable = Bool
 
 type Primitives = [Taxonomy]
-type Locals = [Taxonomy]
 type Conditions = [Taxonomy]
 
-data Rule = Rule Comment Score Match Further Locals Conditions Primitives Actions deriving (Eq, Show)
+data VariableName = VariableName Nullable Name deriving (Eq, Show)
+
+data LocalVariable = LocalVariable VariableName Name deriving (Eq, Show)
+
+data LocalVariables = LocalVariables [LocalVariable] deriving (Eq, Show)
+
+data Rule = Rule Comment Score Match Further LocalVariables Conditions Primitives Actions deriving (Eq, Show)
 
 data Rules = Rules [Rule] deriving (Eq, Show)
 

@@ -66,12 +66,19 @@ commentParser = do
   content <- many (noneOf "\n")
   spaces
   return ()
-  
+
 manyCommentsParser :: IParser [()]
 manyCommentsParser = many commentParser
 
 commaSeparatedparser :: IParser a -> IParser [a]
 commaSeparatedparser parser = sepBy parser (char ',')
+
+-- Parser for variable names
+variableName :: IParser VariableName
+variableName = do
+    qm <- option "" (string "?") 
+    name <- many (alphaNum <|> char '_')
+    return $ VariableName (qm /= "") name
 
 -----------------------------------------------------------------
 -- More complicated parsers
@@ -82,13 +89,23 @@ fieldNameParser name = string name <* char ':' <* spaces <* optional commentPars
 
 fieldDataParser :: Name -> IParser a -> IParser a
 fieldDataParser name parser = do
-    res <- string name
+    _ <- string name
     char ':'
     spaces
     value <- parser
     spaces
     optional commentParser
     return value
+
+fieldDataValueParser :: IParser a -> IParser b -> IParser (a, b)
+fieldDataValueParser nameParser valueParser = do
+    name <- nameParser
+    char ':'
+    spaces
+    value <- valueParser
+    spaces
+    optional commentParser
+    return (name, value)
 
 fieldParser :: Name -> IParser a -> IParser [a]
 fieldParser name parser = withPos $ do
@@ -101,6 +118,12 @@ indentedfieldDataParser name parser = indented *> fieldDataParser name parser
 
 indentedFieldOptionalDataParser :: Name -> IParser a -> a -> IParser a
 indentedFieldOptionalDataParser name parser defaultvalue = option defaultvalue $ indented *> fieldDataParser name parser
+
+indentedfieldDataValueParser :: IParser a -> IParser b -> IParser (a, b)
+indentedfieldDataValueParser nameParser valueParser = indented *> fieldDataValueParser nameParser valueParser
+
+indentedfieldOptionalDataValueParser :: IParser a -> IParser b -> (a, b) -> IParser (a, b)
+indentedfieldOptionalDataValueParser nameParser valueParser defaultvalue = option defaultvalue $ indented *> fieldDataValueParser nameParser valueParser
 
 indentedFieldParser:: Name -> IParser a -> IParser [a]
 indentedFieldParser name parser = indented *> fieldParser name parser
@@ -116,18 +139,24 @@ indentedFieldOptionalParser name parser = option [] $ indented *> fieldParser na
 -- TODO: Parse locals
 -- TODO: Parse conditions
 -- TODO: Parse tree like S (NP("John") VP("move" NP("an apple") PREP("into" NP("table")))
+
+localVariableParser :: IParser LocalVariable
+localVariableParser  = withPos $ do
+    (name, value) <- fieldDataValueParser variableName noncommentStringParser
+    return $ LocalVariable name value
+
 ruleParser :: PrimitiveTemplates -> IParser Rule
 ruleParser primitives = withPos $ do
     _ <- fieldNameParser "rule"
     comment <- indentedFieldOptionalDataParser "comment" noncommentStringParser ""
     match <- indentedfieldDataParser "match" noncommentStringParser
     score <- indentedFieldOptionalDataParser "score" doubleParser 1.0
-    locals <- indentedFieldOptionalParser "locals" pTaxonomy
+    locals <- indentedFieldOptionalParser "locals" localVariableParser
     conditions <- indentedFieldOptionalParser "conditions" pTaxonomy
     further <- indentedFieldOptionalDataParser "further" noncommentStringParser ""
     primitives <- indentedFieldOptionalParser "primitives" pTaxonomy
     actions <- indentedFieldOptionalDataParser "actions" noncommentStringParser ""
-    return $ Rule comment score match further locals conditions primitives actions
+    return $ Rule comment score match further (LocalVariables locals) conditions primitives actions
 
 rulesParser :: PrimitiveTemplates -> IParser Rules
 rulesParser primitives = do
