@@ -27,7 +27,7 @@ iParse aParser source_name input =
 
 -- Parser for quoted strings
 noncommentStringParser :: IParser String
-noncommentStringParser = many (noneOf "\"\n#")
+noncommentStringParser = many (noneOf "\n#")
 
 -- Parser for dates
 parseBasicDate :: String -> Maybe UTCTime
@@ -112,21 +112,22 @@ indentedFieldOptionalParser name parser = option [] $ fmap snd $ indented *> fie
 -- Top parsers
 -----------------------------------------------------------------
 
--- TODO: Parse 'search' field
 -- TODO: Parse primiives
--- TODO: Parse 'context' field
--- TODO: Parse 'locals' field
--- TODO: Parse 'conditions' field
--- TODO: Parse tree
+-- TODO: Parse locals
+-- TODO: Parse conditions
+-- TODO: Parse tree like S (NP("John") VP("move" NP("an apple") PREP("into" NP("table")))
 ruleParser :: PrimitiveTemplates -> IParser Rule
 ruleParser primitives = withPos $ do
     _ <- fieldNameParser "rule"
     comment <- indentedFieldOptionalDataParser "comment" noncommentStringParser ""
-    score <- indentedFieldOptionalDataParser "score" doubleParser 1.0
     match <- indentedfieldDataParser "match" noncommentStringParser
+    score <- indentedFieldOptionalDataParser "score" doubleParser 1.0
+    locals <- indentedFieldOptionalParser "locals" pTaxonomy
+    conditions <- indentedFieldOptionalParser "conditions" pTaxonomy
+    further <- indentedFieldOptionalDataParser "further" noncommentStringParser ""
     primitives <- indentedFieldOptionalParser "primitives" pTaxonomy
     actions <- indentedFieldOptionalDataParser "actions" noncommentStringParser ""
-    return $ Rule comment score match primitives actions
+    return $ Rule comment score match further locals conditions primitives actions
 
 rulesParser :: PrimitiveTemplates -> IParser Rules
 rulesParser primitives = do
@@ -166,7 +167,7 @@ parseCDDB path content = iParse aCDDBParsers path content
 -- TODO: Remove
 -------------------
 pTerm :: IParser String
-pTerm = many1 alphaNum <* spaces
+pTerm = noncommentStringParser <* spaces
 
 pTaxonomy :: IParser Taxonomy
 pTaxonomy = withPos $ do

@@ -1,5 +1,5 @@
 # Parsing rules for sentence trees like S (NP("John") VP("move" NP("an apple") PREP("into" NP("table")))
-# search -- means further analyse tree offered with the data provided
+# further -- means further analyse tree offered with the data provided
 # delete -- means remove from tree
 # scores are multiplied, and could be used to sort if several outcomes are possible
 # naming:
@@ -27,13 +27,13 @@ rules:
     rule:
         comment: Parse active voice S (NP VP)
         match: S (NP VP)
-        search: VP NP
+        further: VP NP
         actions: delete VP NP
 
     rule:
         comment: Parse passive voice S (NP VPP)
         match: S (NP VPP)
-        search: S (VP.NP.PREP(name: "by" "with").PP VPP.VP(NP))
+        further: S (VP.NP.PREP(name: "by" "with").PP VPP.VP(NP))
         actions: delete VPP NP
 
     rule:
@@ -82,7 +82,7 @@ rules:
         comment: Run as move fase, parse "move" first
         match: VP(word: "run"), NP
         score: 1.0
-        seacrh: VP(word: "move"), NP
+        further: VP(word: "move"), NP
         primitives:
             primitive:
                 type: PROPERTY_SET

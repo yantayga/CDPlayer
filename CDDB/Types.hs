@@ -11,13 +11,17 @@ data Taxonomy = Taxonomy Term [Taxonomy] deriving (Eq, Show)
 type Name = String
 type Version = Integer
 type Date = Maybe UTCTime
-
 type Comment = String
 type Score = Double
 type Match = String
 type Actions = String
+type Further = String
 
-data Rule = Rule Comment Score Match [Taxonomy] Actions deriving (Eq, Show)
+type Primitives = [Taxonomy]
+type Locals = [Taxonomy]
+type Conditions = [Taxonomy]
+
+data Rule = Rule Comment Score Match Further Locals Conditions Primitives Actions deriving (Eq, Show)
 
 data Rules = Rules [Rule] deriving (Eq, Show)
 
