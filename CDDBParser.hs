@@ -8,37 +8,47 @@ import qualified Data.Text as T
 import Data.Time
 import Data.Maybe
 
-
-test :: String
-test = unlines [
-   "rules:",
-   "  rule: # rule comment ",
-   "",
-   "    comment: c 1",
-   "    score: 4.15",
-   "    match: S (NP VP)",
-   "    primitives:",
-   "      primitive 11",
-   "      primitive 12",
-   "    actions: a 1",
-   "  rule:",
-   "    match: S # comment",
-   "    actions: a 2",
-   "",
-   "rules: list...",
-   ""
-  ]
-
+-- Data types
 type IParser a = IndentParser String () a
+
+type Term = String
+data Taxonomy = Taxonomy Term [Taxonomy] deriving (Eq, Show)
+
+type Name = String
+type Version = Integer
+type Date = Maybe UTCTime
+
+type Comment = String
+type Score = Double
+type Match = String
+type Actions = String
+data Rule = Rule Comment Score Match [Taxonomy] Actions deriving (Eq, Show)
+
+data Rules = Rules [Rule] deriving (Eq, Show)
+
+data Primitive = Primitive Name [Name] deriving (Eq, Show)
+
+data Primitives = Primitives [Primitive] deriving (Eq, Show)
+
+data CDDB = CDDB Name Version Date Primitives Rules deriving (Eq, Show)
+
+-----------------------------------------------------------------
+-- Run parser
+-----------------------------------------------------------------
 
 iParse :: IParser a -> SourceName -> String -> Either ParseError a
 iParse aParser source_name input =
   runIndentParser aParser () source_name input
 
+-----------------------------------------------------------------
+-- Primitive parsers
+-----------------------------------------------------------------
+
 -- Parser for quoted strings
 noncommentStringParser :: IParser String
 noncommentStringParser = many (noneOf "\"\n#")
 
+-- Parser for dates
 parseBasicDate :: String -> Maybe UTCTime
 parseBasicDate = parseTimeM True defaultTimeLocale "%d.%m.%Y"
 
@@ -49,12 +59,14 @@ dateParser = do
     optional commentParser
     return $ parseBasicDate strDate
 
+-- Parser for integers
 integerParser :: IParser Integer
 integerParser = do
     sign <- option "" (string "-" <|> string "+")
     integerPart <- many1 digit
     return $ read (sign ++ integerPart)
 
+-- Parser for doubles
 doubleParser :: IParser Double
 doubleParser = do
     sign <- option "" (string "-" <|> string "+")
@@ -80,26 +92,9 @@ commentParser = do
 commaSeparatedparser :: IParser a -> IParser [a]
 commaSeparatedparser parser = sepBy parser (char ',')
 
-type Term = String
-data Taxonomy = Taxonomy Term [Taxonomy] deriving (Eq, Show)
-
-type Name = String
-type Version = Integer
-type Date = Maybe UTCTime
-
-type Comment = String
-type Score = Double
-type Match = String
-type Actions = String
-data Rule = Rule Comment Score Match [Taxonomy] Actions deriving (Eq, Show)
-
-data Rules = Rules [Rule] deriving (Eq, Show)
-
-data Primitive = Primitive Name [Name] deriving (Eq, Show)
-
-data Primitives = Primitives [Primitive] deriving (Eq, Show)
-
-data CDDB = CDDB Name Version Date Primitives Rules deriving (Eq, Show)
+-----------------------------------------------------------------
+-- More complicated parsers
+-----------------------------------------------------------------
 
 fieldNameParser :: Name -> IParser String
 fieldNameParser name = string name <* char ':' <* spaces <* optional commentParser
@@ -131,6 +126,10 @@ indentedFieldParser name parser = fmap snd $ indented *> fieldParser name parser
 
 indentedFieldOptionalParser:: Name -> IParser a -> IParser [a]
 indentedFieldOptionalParser name parser = option [] $ fmap snd $ indented *> fieldParser name parser
+
+-----------------------------------------------------------------
+-- Top parsers
+-----------------------------------------------------------------
 
 -- TODO: Parse 'search' field
 -- TODO: Parse primiives
@@ -182,15 +181,7 @@ parseCDDBFile path = do
     return res
 
 
-
-
-
-
-
-
-
-
-
+-- TODO: Remove
 -------------------
 pTerm :: IParser String
 pTerm = many1 alphaNum <* spaces
