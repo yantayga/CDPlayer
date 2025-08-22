@@ -1,7 +1,6 @@
 module CD where
 
 import CDDB.Types
-import CDDB.JSON
 import CDDB.Runner
 
 import Data.Aeson
@@ -38,7 +37,9 @@ testRules = Rules
             (Actions [])
     ]
 
-testCDDB = CDDB "CDDB example" 1 Nothing testPrimitiveTemplates testRules
+testKnowledge = Knowledge []
+
+testCDDB = CDDB "CDDB example" 1 Nothing testPrimitiveTemplates testRules testKnowledge
 
 printCDDB cddb = do
     Data.ByteString.Lazy.putStr $ encode (toJSON cddb)
