@@ -5,6 +5,7 @@ module CD where
 
 import CDDB.Types
 import CDDB.Runner
+import CDDB.SyntacticTree
 
 import Data.Aeson hiding (Null)
 import Data.Map (fromList)
@@ -22,13 +23,13 @@ testPrimitiveTemplates = PrimitiveTemplates testPrimitiveTemplatesMap
 testRules = Rules
     [
         Rule "rule 1 comment" 1.0
-            "S ()"
+            (FilterTag "S" []) -- S ()
             (Locals [])
             (Conditions [])
             (Actions [Stop])
         ,
         Rule "rule 2 comment" 0.9
-            "S (NP VP)"
+            (FilterTag "S" [Asterix, FilterTag "NP" [], FilterTag "VP" [], Asterix]) -- S(* NP VP *)
             (Locals [
                 VariableDef "object" (Constant Null)
             ])

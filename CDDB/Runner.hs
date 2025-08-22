@@ -3,6 +3,8 @@
 
 module CDDB.Runner where
 
+import System.IO.Unsafe
+
 import GHC.Generics
 import Data.Aeson hiding (Null)
 import qualified Data.Map as M
@@ -12,12 +14,42 @@ import Control.Monad
 
 import CDDB.Types
 import CDDB.Expressions
-
+import CDDB.SyntacticTree
 
 data Context = Context
         VariableStates  -- current variables
         Score           -- accumulated score
         Knowledge       -- knowledge we accumulated
+
+applyTree :: SyntacticTree -> CDDB -> Either Context Context
+applyTree t db = foldM evaluateRule emptyContext rules
+    where
+        rules = matchRules t db
+
+emptyContext :: Context
+emptyContext = Context (VariableStates M.empty) 1.0 (Knowledge [])
+
+matchRules :: SyntacticTree -> CDDB -> [Rule]
+matchRules t (CDDB _ _ _ _ (Rules rules) _) = filter (matchRule t) rules
+
+matchRule :: SyntacticTree -> Rule -> Bool
+matchRule t (Rule _ _ filter _ _ _) = matchFilter t filter
+
+matchFilter :: SyntacticTree -> FilterExpression -> Bool
+matchFilter _ Asterix = True
+matchFilter (Tag id ts) (FilterTag fid fs) = id == fid && matchFilter' ts fs
+matchFilter (Word s) (FilterWord fs) = s == fs
+matchFilter _ _ = False
+
+matchFilter' :: [SyntacticTree] -> [FilterExpression] -> Bool
+matchFilter' [] [] = True
+matchFilter' _ [] = False
+matchFilter' [] (Asterix: sfs) = matchFilter' [] sfs
+matchFilter' [] _ = False
+matchFilter' ts@(t: sts) fs@(Asterix: sfs) = matchFilter' sts fs  -- maitched t with *, not consumed t, consumed *
+                                          || matchFilter' ts sfs  -- maitched [] with *, consumed *
+                                          -- || matchFilter' sts sfs -- maitched t with *, consumed t, not consumed *
+matchFilter' (t: sts) (f: sfs) = matchFilter t f &&  matchFilter' sts sfs
 
 evaluateRule :: Context -> Rule -> Either Context Context
 evaluateRule ctx@(Context states score kn) rule@(Rule _ ruleScore _ locals conditions actions) =

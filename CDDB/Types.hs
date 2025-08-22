@@ -8,6 +8,8 @@ import Data.Aeson
 import Data.Time
 import Data.Map
 
+import CDDB.SyntacticTree
+
 data CDDB = CDDB Name Version Date PrimitiveTemplates Rules Knowledge deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 newtype PrimitiveTemplates = PrimitiveTemplates (Map Name FieldDefinitions) deriving (Eq, Show, Generic, ToJSON, FromJSON)
@@ -16,7 +18,7 @@ newtype FieldDefinitions = FieldDefinitions [Name] deriving (Eq, Show, Generic, 
 
 newtype Rules = Rules [Rule] deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data Rule = Rule Comment Score Match Locals Conditions Actions deriving (Eq, Show, Generic, ToJSON, FromJSON)
+data Rule = Rule Comment Score FilterExpression Locals Conditions Actions deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 newtype Locals = Locals [VariableDef] deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
