@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module CD where
 
 import CDDB.Types
@@ -43,4 +45,4 @@ testCDDB = CDDB "CDDB example" 1 Nothing testPrimitiveTemplates testRules testKn
 
 printCDDB cddb = do
     Data.ByteString.Lazy.putStr $ encode (toJSON cddb)
-    Prelude.putStr $ "\n"
+    Data.ByteString.Lazy.putStr $ "\n"
