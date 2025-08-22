@@ -1,12 +1,45 @@
 module CD where
 
-import Text.Parsec hiding (State)
 import CDDB.Types
-import CDDB.Parser
+import CDDB.JSON
+import CDDB.Runner
 
-parseCDDBFile :: FilePath -> IO (Either ParseError CDDB)
-parseCDDBFile path = do
-    fileContent <- readFile path
-    let res = parseCDDB path fileContent
-    return res
+import Data.Aeson
+import Data.Map (fromList)
+import Data.ByteString.Lazy
 
+testPrimitiveTemplatesMap = fromList(
+    [
+        ("MOVE", (FieldDefinitions ["subject", "object", "source", "destination", "path"])),
+        ("PROPERTY", (FieldDefinitions ["object", "name", "value"]))
+    ]
+    )
+
+testPrimitiveTemplates = PrimitiveTemplates testPrimitiveTemplatesMap
+
+testRules = Rules
+    [
+        Rule "rule 1 comment" 1.0
+            "S ()"
+            (Locals [])
+            (Contitions [])
+            (Primitives [])
+            (Actions [Stop])
+        ,
+        Rule "rule 2 comment" 0.9
+            "S (NP VP)"
+            (Locals [
+                VariableDef "object" True "NP"
+            ])
+            (Contitions [
+                UnOp IsNotNull (Variable "object")
+            ])
+            (Primitives [Primitive "MOVE" (FieldValues ["NP", "object", "", "", ""])])
+            (Actions [])
+    ]
+
+testCDDB = CDDB "CDDB example" 1 Nothing testPrimitiveTemplates testRules
+
+printCDDB cddb = do
+    Data.ByteString.Lazy.putStr $ encode (toJSON cddb)
+    Prelude.putStr $ "\n"
