@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 
 module CDDB.Types where
 
@@ -29,7 +28,7 @@ newtype Primitives = Primitives [Primitive] deriving (Eq, Show, Generic, ToJSON,
 
 data Primitive = Primitive Name FieldValues deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype FieldValues = FieldValues [Name] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+newtype FieldValues = FieldValues [Expression] deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 newtype Actions = Actions [Action] deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -38,6 +37,7 @@ data Action = Stop
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Expression = Variable VariableName
+    | Null
     | StringValue String
     | IntegerValue Integer
     | DoubleValue Double
@@ -47,7 +47,7 @@ data Expression = Variable VariableName
 
 data UnOp = IsNull | IsNotNull | UnaryMinus deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data BinOp = Plus | Minus | Divide | Multiply 
+data BinOp = Plus | Minus | Divide | Multiply
     | IsA | IsNotA
     | Dot
     deriving (Eq, Show, Generic, ToJSON, FromJSON)

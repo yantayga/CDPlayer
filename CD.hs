@@ -5,7 +5,7 @@ module CD where
 import CDDB.Types
 import CDDB.Runner
 
-import Data.Aeson
+import Data.Aeson hiding (Null)
 import Data.Map (fromList)
 import Data.ByteString.Lazy
 
@@ -35,7 +35,7 @@ testRules = Rules
             (Contitions [
                 UnOp IsNotNull (Variable "object")
             ])
-            (Primitives [Primitive "MOVE" (FieldValues ["NP", "object", "", "", ""])])
+            (Primitives [Primitive "MOVE" (FieldValues [Variable "NP", Variable "object", Null, Null, Null])])
             (Actions [])
     ]
 
