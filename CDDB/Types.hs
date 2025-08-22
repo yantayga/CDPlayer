@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module CDDB.Types where
 
@@ -6,7 +7,6 @@ import GHC.Generics
 import Data.Aeson
 import Data.Time
 import Data.Map
-
 
 data CDDB = CDDB Name Version Date PrimitiveTemplates Rules Knowledge deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -35,14 +35,11 @@ data Action = Stop
     | AddFact Primitive
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data Constant = Null
-    | CBoolean Bool
-    | CString String
-    | CInteger Integer
-    | CDouble Double
-    | CPrimitive Primitive
-    | CType Name
-    deriving (Eq, Show, Generic, ToJSON, FromJSON)
+newtype Knowledge = Knowledge [Fact] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+data Fact = Fact Name FieldConstants deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+newtype FieldConstants = FieldConstants [Constant] deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Expression = Constant Constant
     | Variable VariableName
@@ -50,19 +47,22 @@ data Expression = Constant Constant
     | BinOp BinOp Expression Expression
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
+data Constant = Error 
+    | Null
+    | CBoolean Bool
+    | CInteger Integer
+    | CDouble Double
+    | CString String
+    | CPrimitive Fact
+    | CType Name
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
+    
 data UnOp = IsNull | IsNotNull | UnaryMinus deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data BinOp = Plus | Minus | Divide | Multiply
     | IsA | IsNotA
     | Dot
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
-newtype Knowledge = Knowledge [Fact] deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
-data Fact = Fact Name FieldConstants deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
-newtype FieldConstants = FieldConstants [Constant] deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
 
 -- Aliases
 type Name = String

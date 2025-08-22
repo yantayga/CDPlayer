@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module CDDB.Runner where
 
@@ -10,19 +11,14 @@ import Data.Either.Extra
 import Control.Monad
 
 import CDDB.Types
+import CDDB.Expressions
 
-data State = State
-    deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
-newtype VariableStates = VariableStates (M.Map VariableName Constant) deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Context = Context
         VariableStates  -- current variables
         Score           -- accumulated score
         Knowledge       -- knowledge we accumulated
-    deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
-
+        
 evaluateRule :: Context -> Rule -> Either Context Context
 evaluateRule ctx@(Context states score kn) rule@(Rule _ ruleScore _ locals conditions actions) = 
     if applicable 
@@ -57,8 +53,5 @@ checkConditions states (Conditions exprs) = all (== (CBoolean True)) $ map (eval
 evaluateFact :: VariableStates -> Primitive -> Fact
 evaluateFact states (Primitive name (FieldVariables fieldVariables)) = Fact name $ FieldConstants $ map (evaluateExpression states) fieldVariables
 
-evaluateExpression :: VariableStates -> Expression -> Constant
-evaluateExpression _ (Constant const) = const
-evaluateExpression (VariableStates map) (Variable name) = fromMaybe Null $ M.lookup name map
 
 

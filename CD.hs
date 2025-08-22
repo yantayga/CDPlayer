@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module CD where
 
