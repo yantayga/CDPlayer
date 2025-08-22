@@ -23,19 +23,19 @@ testRules = Rules
         Rule "rule 1 comment" 1.0
             "S ()"
             (Locals [])
-            (Contitions [])
+            (Conditions [])
             (Actions [Stop])
         ,
         Rule "rule 2 comment" 0.9
             "S (NP VP)"
             (Locals [
-                VariableDef "object" True "NP"
+                VariableDef "object" (Constant Null)
             ])
-            (Contitions [
+            (Conditions [
                 UnOp IsNotNull (Variable "object")
             ])
             (Actions [
-                AddFact (Fact (Primitive "MOVE" (FieldValues [Variable "NP", Variable "object", Null, Null, Null])))
+                AddFact (Primitive "MOVE" (FieldVariables [Variable "NP", Variable "object", Constant Null, Constant Null, Constant Null]))
             ])
     ]
 

@@ -16,35 +16,38 @@ newtype FieldDefinitions = FieldDefinitions [Name] deriving (Eq, Show, Generic, 
 
 newtype Rules = Rules [Rule] deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data Rule = Rule Comment Score Match Locals Contitions Actions deriving (Eq, Show, Generic, ToJSON, FromJSON)
+data Rule = Rule Comment Score Match Locals Conditions Actions deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 newtype Locals = Locals [VariableDef] deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data VariableDef = VariableDef Name Nullable Name deriving (Eq, Show, Generic, ToJSON, FromJSON)
+data VariableDef = VariableDef Name Expression deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype Contitions = Contitions [Expression] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+newtype Conditions = Conditions [Expression] deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype FieldValues = FieldValues [Expression] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+newtype FieldVariables = FieldVariables [Expression] deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 newtype Actions = Actions [Action] deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data Primitive = Primitive Name FieldValues deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
-newtype Fact = Fact Primitive deriving (Eq, Show, Generic, ToJSON, FromJSON)
+data Primitive = Primitive Name FieldVariables deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Action = Stop
     | Delete VariableName
-    | AddFact Fact
+    | AddFact Primitive
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data Expression = Variable VariableName
-    | Null
-    | StringValue String
-    | IntegerValue Integer
-    | DoubleValue Double
+data Constant = Null
+    | CBoolean Bool
+    | CString String
+    | CInteger Integer
+    | CDouble Double
+    | CPrimitive Primitive
+    | CType Name
+    deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+data Expression = Constant Constant
+    | Variable VariableName
     | UnOp UnOp Expression
     | BinOp BinOp Expression Expression
-    | PrimitiveLink Primitive
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data UnOp = IsNull | IsNotNull | UnaryMinus deriving (Eq, Show, Generic, ToJSON, FromJSON)
@@ -56,6 +59,11 @@ data BinOp = Plus | Minus | Divide | Multiply
 
 newtype Knowledge = Knowledge [Fact] deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
+data Fact = Fact Name FieldConstants deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+newtype FieldConstants = FieldConstants [Constant] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+
 -- Aliases
 type Name = String
 type VariableName = String
@@ -64,5 +72,4 @@ type Version = Integer
 type Score = Double
 type Date = Maybe UTCTime
 type Match = String
-type Nullable = Bool
 
