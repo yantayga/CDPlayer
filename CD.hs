@@ -24,7 +24,6 @@ testRules = Rules
             "S ()"
             (Locals [])
             (Contitions [])
-            (Primitives [])
             (Actions [Stop])
         ,
         Rule "rule 2 comment" 0.9
@@ -35,8 +34,9 @@ testRules = Rules
             (Contitions [
                 UnOp IsNotNull (Variable "object")
             ])
-            (Primitives [Primitive "MOVE" (FieldValues [Variable "NP", Variable "object", Null, Null, Null])])
-            (Actions [])
+            (Actions [
+                AddFact (Fact (Primitive "MOVE" (FieldValues [Variable "NP", Variable "object", Null, Null, Null])))
+            ])
     ]
 
 testKnowledge = Knowledge []
