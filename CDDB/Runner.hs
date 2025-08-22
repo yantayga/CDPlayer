@@ -18,16 +18,16 @@ data Context = Context
         VariableStates  -- current variables
         Score           -- accumulated score
         Knowledge       -- knowledge we accumulated
-        
+
 evaluateRule :: Context -> Rule -> Either Context Context
-evaluateRule ctx@(Context states score kn) rule@(Rule _ ruleScore _ locals conditions actions) = 
-    if applicable 
-        then doActions (Context states' (score*ruleScore) kn) actions 
+evaluateRule ctx@(Context states score kn) rule@(Rule _ ruleScore _ locals conditions actions) =
+    if applicable
+        then doActions (Context states' (score*ruleScore) kn) actions
         else Right ctx
     where
         states' = addLocals states locals
         applicable = checkConditions states' conditions
- 
+
 doActions :: Context -> Actions -> Either Context Context
 doActions ctx (Actions actions) = foldM doAction ctx actions
 
@@ -37,7 +37,7 @@ doAction ctx (AddFact p) = Right $ addFact ctx p
 doAction ctx (Delete a) = undefined
 
 addFact :: Context -> Primitive -> Context
-addFact (Context states score (Knowledge kn)) p = Context states score (Knowledge $ evaluateFact states p: kn) 
+addFact (Context states score (Knowledge kn)) p = Context states score (Knowledge $ evaluateFact states p: kn)
 
 addLocals :: VariableStates -> Locals -> VariableStates
 addLocals states (Locals ls) = foldl addVariableDef states ls

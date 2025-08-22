@@ -47,7 +47,7 @@ data Expression = Constant Constant
     | BinOp BinOp Expression Expression
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data Constant = Error 
+data Constant = Error
     | Null
     | CBoolean Bool
     | CInteger Integer
@@ -56,7 +56,7 @@ data Constant = Error
     | CPrimitive Fact
     | CType Name
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
-    
+
 data UnOp = IsNull | IsNotNull | UnaryMinus deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data BinOp = Plus | Minus | Divide | Multiply
