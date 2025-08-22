@@ -17,23 +17,23 @@ data State = State
 newtype VariableStates = VariableStates (M.Map VariableName Constant) deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Context = Context
-        VariableStates -- current variables
-        Score          -- accumulated score
-        Knowledge      -- knowledge we accumulated
+        VariableStates  -- current variables
+        Score           -- accumulated score
+        Knowledge       -- knowledge we accumulated
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 
-evaluateRule :: Context -> Rule -> Context
+evaluateRule :: Context -> Rule -> Either Context Context
 evaluateRule ctx@(Context states score kn) rule@(Rule _ ruleScore _ locals conditions actions) = 
     if applicable 
         then doActions (Context states' (score*ruleScore) kn) actions 
-        else ctx
+        else Right ctx
     where
         states' = addLocals states locals
         applicable = checkConditions states' conditions
  
-doActions :: Context -> Actions -> Context
-doActions ctx (Actions actions) = fromEither $ foldM doAction ctx actions
+doActions :: Context -> Actions -> Either Context Context
+doActions ctx (Actions actions) = foldM doAction ctx actions
 
 doAction :: Context -> Action -> Either Context Context
 doAction ctx Stop = Left ctx
@@ -41,7 +41,7 @@ doAction ctx (AddFact p) = Right $ addFact ctx p
 doAction ctx (Delete a) = undefined
 
 addFact :: Context -> Primitive -> Context
-addFact (Context states score (Knowledge kn)) p = Context states score $ Knowledge $ evaluateFact states p: kn
+addFact (Context states score (Knowledge kn)) p = Context states score (Knowledge $ evaluateFact states p: kn) 
 
 addLocals :: VariableStates -> Locals -> VariableStates
 addLocals states (Locals ls) = foldl addVariableDef states ls
