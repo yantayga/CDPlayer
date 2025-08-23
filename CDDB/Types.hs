@@ -10,7 +10,14 @@ import Data.Map
 
 import CDDB.SyntacticTree
 
-data CDDB = CDDB Name Version Date PrimitiveTemplates Rules Knowledge deriving (Eq, Show, Generic, ToJSON, FromJSON)
+data CDDB = CDDB {
+    name :: Name,
+    version :: Version,
+    date :: UTCTime,
+    templates :: PrimitiveTemplates,
+    rules :: Rules,
+    kn :: Knowledge
+    } deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 newtype PrimitiveTemplates = PrimitiveTemplates (Map Name FieldDefinitions) deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -72,6 +79,5 @@ type VariableName = String
 type Comment = String
 type Version = Integer
 type Score = Double
-type Date = Maybe UTCTime
 type Match = String
 

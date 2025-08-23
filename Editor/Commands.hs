@@ -6,6 +6,7 @@ module Editor.Commands where
 import CDDB.Types
 import CDDB.Process
 
+import Data.Time
 import qualified Data.Map as M
 import Data.List (intercalate, isInfixOf)
 import Data.Either.Extra (maybeToEither)
@@ -65,11 +66,12 @@ cmdCreateEmptyCDDB args state = return $ Right initialProgramState
 
 cmdSaveCDDB :: Command
 cmdSaveCDDB args state = do
+    today <- getCurrentTime
     case extractFileName args state of
         Left errMsg -> return $ Left errMsg
-        Right fn -> do
-            B.writeFile fn $ encode (toJSON $ cddb state)
-            return $ Right state {isNotSaved = False}
+        Right fn -> let updatedCDDB = updateCDDBDate (cddb state) today in do
+            B.writeFile fn $ encode (toJSON $ updatedCDDB)
+            return $ Right state {cddb = updatedCDDB, isNotSaved = False}
 
 cmdLoadCDDB :: Command
 cmdLoadCDDB args state = do
