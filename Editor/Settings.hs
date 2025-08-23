@@ -36,7 +36,7 @@ decodeSettings s = decode s
 readSettings :: IO (Settings)
 readSettings = do
     handle <- openFile "editorSettings.json" ReadWriteMode
-    fileContent <- B.hGetContents handle 
+    fileContent <- B.hGetContents handle
     case decodeSettings fileContent of
         Nothing -> return defalultSettings
         Just s -> return s

@@ -8,19 +8,23 @@ import Control.Monad (unless)
 import System.IO
 
 import Editor.Settings
+import Editor.Commands
 
 main :: IO ()
 main = do
         settings <- readSettings
-        runInputTWithPrefs (haskelinePrefsFromSettings settings) (haskelineSettionsFromSettings settings) loop
+        runInputTWithPrefs (haskelinePrefsFromSettings settings) (haskelineSettionsFromSettings settings) $ loop initialProgramState
         writeSettings settings
     where
-        loop :: InputT IO ()
-        loop = do
+        loop :: ProgramState -> InputT IO ()
+        loop state = do
             minput <- getInputLine "CDDB> "
             case minput of
                 Nothing -> return ()
                 Just "quit" -> return ()
-                Just input -> do outputStrLn $ "Input was: " ++ input
-                                 loop
-                                
+                Just input -> do
+                    case runCommand input state of
+                        Left errorMessage -> outputStrLn errorMessage >> loop state
+                        Right state' -> loop state'
+
+
