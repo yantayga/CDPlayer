@@ -10,6 +10,11 @@ import System.IO
 import Editor.Settings
 import Editor.Commands
 
+agreedNotToSave :: InputT IO (Bool)
+agreedNotToSave = do
+    answer <- getInputChar "CDDB is not saved. Dou you really want to quit (y/N)?"
+    return $ answer == Just 'N'
+
 main :: IO ()
 main = do
         settings <- readSettings
@@ -21,7 +26,11 @@ main = do
             minput <- getInputLine "CDDB> "
             case minput of
                 Nothing -> return ()
-                Just "quit" -> return ()
+                Just "quit" -> do
+                    if isNotSaved state then do
+                        exiting <- agreedNotToSave
+                        if exiting then return() else loop state
+                    else return ()
                 Just input -> do
                     case runCommand input state of
                         Left errorMessage -> outputStrLn errorMessage >> loop state

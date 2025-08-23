@@ -11,7 +11,8 @@ import Data.List (intercalate)
 
 data ProgramState = ProgramState {
         cddb :: CDDB,
-        currentRule :: Maybe Rule
+        currentRule :: Maybe Rule,
+        isNotSaved :: Bool
     }
 
 type Arguments = [String]
@@ -25,7 +26,7 @@ commands = M.fromList [
     ]
 
 initialProgramState :: ProgramState
-initialProgramState = ProgramState emptyCDDB Nothing
+initialProgramState = ProgramState emptyCDDB Nothing True
 
 runCommand :: String -> ProgramState -> Either String ProgramState
 runCommand cmd state =
@@ -40,4 +41,5 @@ cmdTestErMsg :: Command
 cmdTestErMsg args _= Left $ "TEST ERROR MESSAGE: " ++ intercalate " " args
 
 cmdCreateEmptyCDDB :: Command
-cmdCreateEmptyCDDB args state = Right $ state { cddb = emptyCDDB }
+cmdCreateEmptyCDDB args state = Right $ state { cddb = emptyCDDB, currentRule = Nothing, isNotSaved = True}
+
