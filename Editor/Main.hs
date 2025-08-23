@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module Editor where
+module Main where
 
 import System.Console.Haskeline
 import Control.Monad (unless)
