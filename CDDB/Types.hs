@@ -11,32 +11,32 @@ import Data.Map
 import CDDB.SyntacticTree
 
 data CDDB = CDDB {
-    name :: String,
-    comment :: String,
-    version :: Integer,
-    date :: UTCTime,
-    templates :: PrimitiveTemplates,
-    rules :: Rules,
-    kn :: Knowledge
+        name :: String,
+        comment :: String,
+        version :: Integer,
+        date :: UTCTime,
+        templates :: PrimitiveTemplates,
+        rules :: Rules,
+        kn :: Knowledge
     } deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 newtype PrimitiveTemplates = PrimitiveTemplates (Map Name FieldDefinitions) deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype FieldDefinitions = FieldDefinitions [Name] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+type FieldDefinitions = [Name]
 
-newtype Rules = Rules [Rule] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+type Rules = [Rule]
 
 data Rule = Rule Comment Score FilterExpression Locals Conditions Actions deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype Locals = Locals [VariableDef] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+type Locals = [VariableDef]
 
 data VariableDef = VariableDef Name Expression deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype Conditions = Conditions [Expression] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+type Conditions = [Expression]
 
-newtype FieldVariables = FieldVariables [Expression] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+type FieldVariables = [Expression]
 
-newtype Actions = Actions [Action] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+type Actions = [Action]
 
 data Primitive = Primitive Name FieldVariables deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -45,11 +45,11 @@ data Action = Stop
     | AddFact Primitive
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype Knowledge = Knowledge [Fact] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+type Knowledge = [Fact]
 
 data Fact = Fact Name FieldConstants deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype FieldConstants = FieldConstants [Constant] deriving (Eq, Show, Generic, ToJSON, FromJSON)
+type FieldConstants = [Constant]
 
 data Expression = Constant Constant
     | Variable VariableName

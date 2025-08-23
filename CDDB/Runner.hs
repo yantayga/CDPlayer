@@ -16,10 +16,11 @@ import CDDB.Types
 import CDDB.Expressions
 import CDDB.SyntacticTree
 
-data Context = Context
-        VariableStates  -- current variables
-        Score           -- accumulated score
-        Knowledge       -- knowledge we accumulated
+data Context = Context {
+        variableStates :: VariableStates,
+        accumulatedScore :: Score,
+        accumulatedKnowledge :: Knowledge
+    }
 
 applyTree :: SyntacticTree -> CDDB -> Either Context Context
 applyTree t db = foldM evaluateRule emptyContext rules
@@ -27,10 +28,14 @@ applyTree t db = foldM evaluateRule emptyContext rules
         rules = matchRules t db
 
 emptyContext :: Context
-emptyContext = Context (VariableStates M.empty) 1.0 (Knowledge [])
+emptyContext = Context {
+        variableStates = VariableStates M.empty,
+        accumulatedScore = 1.0,
+        accumulatedKnowledge = []
+    }
 
 matchRules :: SyntacticTree -> CDDB -> [Rule]
-matchRules t (CDDB _ _ _ _ (Rules rules) _) = filter (matchRule t) rules
+matchRules t cddb = filter (matchRule t) $ rules cddb
 
 matchRule :: SyntacticTree -> Rule -> Bool
 matchRule t (Rule _ _ filter _ _ _) = matchFilter t filter
@@ -52,16 +57,16 @@ matchFilter' ts@(t: sts) fs@(Asterix: sfs) = matchFilter' sts fs  -- maitched t 
 matchFilter' (t: sts) (f: sfs) = matchFilter t f &&  matchFilter' sts sfs
 
 evaluateRule :: Context -> Rule -> Either Context Context
-evaluateRule ctx@(Context states score kn) rule@(Rule _ ruleScore _ locals conditions actions) =
+evaluateRule ctx rule@(Rule _ ruleScore _ locals conditions actions) =
     if applicable
-        then doActions (Context states' (score*ruleScore) kn) actions
+        then doActions (ctx {variableStates = states', accumulatedScore = accumulatedScore ctx * ruleScore}) actions
         else Right ctx
     where
-        states' = addLocals states locals
+        states' = addLocals (variableStates ctx) locals
         applicable = checkConditions states' conditions
 
 doActions :: Context -> Actions -> Either Context Context
-doActions ctx (Actions actions) = foldM doAction ctx actions
+doActions ctx actions = foldM doAction ctx actions
 
 doAction :: Context -> Action -> Either Context Context
 doAction ctx Stop = Left ctx
@@ -69,10 +74,10 @@ doAction ctx (AddFact p) = Right $ addFact ctx p
 doAction ctx (Delete a) = undefined
 
 addFact :: Context -> Primitive -> Context
-addFact (Context states score (Knowledge kn)) p = Context states score (Knowledge $ evaluateFact states p: kn)
+addFact ctx p = ctx {accumulatedKnowledge = evaluateFact (variableStates ctx) p: (accumulatedKnowledge ctx)}
 
 addLocals :: VariableStates -> Locals -> VariableStates
-addLocals states (Locals ls) = foldl addVariableDef states ls
+addLocals states ls = foldl addVariableDef states ls
 
 addVariableDef :: VariableStates -> VariableDef -> VariableStates
 addVariableDef states@(VariableStates map) (VariableDef name expr) = VariableStates $ M.insert name value map
@@ -80,10 +85,10 @@ addVariableDef states@(VariableStates map) (VariableDef name expr) = VariableSta
         value = evaluateExpression states expr
 
 checkConditions :: VariableStates -> Conditions -> Bool
-checkConditions states (Conditions exprs) = all (== (CBoolean True)) $ map (evaluateExpression states) exprs
+checkConditions states exprs = all (== (CBoolean True)) $ map (evaluateExpression states) exprs
 
 evaluateFact :: VariableStates -> Primitive -> Fact
-evaluateFact states (Primitive name (FieldVariables fieldVariables)) = Fact name $ FieldConstants $ map (evaluateExpression states) fieldVariables
+evaluateFact states (Primitive name fieldVariables) = Fact name $ map (evaluateExpression states) fieldVariables
 
 
 
