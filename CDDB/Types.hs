@@ -20,7 +20,7 @@ data CDDB = CDDB {
         kn :: Knowledge
     } deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype PrimitiveTemplates = PrimitiveTemplates (Map Name FieldDefinitions) deriving (Eq, Show, Generic, ToJSON, FromJSON)
+type PrimitiveTemplates = Map Name FieldDefinitions
 
 type FieldDefinitions = [Name]
 

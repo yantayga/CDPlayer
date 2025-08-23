@@ -15,7 +15,7 @@ emptyCDDB = CDDB {
         comment = "",
         version = 1,
         date = UTCTime (fromOrdinalDate 0 0) 0,
-        templates = PrimitiveTemplates $ fromList [],
+        templates = fromList [],
         rules = [],
         kn = []
     }
