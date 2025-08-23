@@ -31,13 +31,10 @@ defalultSettings = Settings {
         autoAddHistory = True
     }
 
-decodeSettings :: B.ByteString -> Maybe Settings
-decodeSettings s = decode s
-
 readSettings :: IO (Settings)
 readSettings = do
     fileContent <- (flip catch) exceptonHandler $ B.readFile "editorSettings.json"
-    case decodeSettings fileContent of
+    case (decode :: B.ByteString -> Maybe Settings) fileContent of
         Nothing -> return defalultSettings
         Just s -> return s
     where

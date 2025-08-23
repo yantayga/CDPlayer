@@ -32,7 +32,7 @@ data CommandDef = CommandDef Command HelpString
 
 commands :: M.Map String CommandDef
 commands = M.fromList [
-        ("new",  CommandDef cmdCreateEmptyCDDB "Create new database."),
+        ("new",  CommandDef cmdCreateEmptyCDDB "    Create new database."),
         ("save", CommandDef cmdSaveCDDB "Save database with optional file name."),
         ("load", CommandDef cmdLoadCDDB "Load database with optional file name."),
         ("help", CommandDef cmdHelp "This help."),
@@ -84,12 +84,9 @@ cmdLoadCDDB args state = do
         Right fn -> do
             handle <- openFile fn ReadMode
             fileContent <- B.hGetContents handle
-            case decodeCDDB fileContent of
+            case (decode :: B.ByteString -> Maybe CDDB) fileContent of
                 Nothing -> return $ Left "Error reading file "
                 Just s -> return $ Right state {isNotSaved = False}
-
-decodeCDDB :: B.ByteString -> Maybe CDDB
-decodeCDDB s = decode s
 
 extractFileName :: Arguments -> ProgramState -> Either String String
 extractFileName [] state = maybeToEither "File name is not specified" $ cddbFileName state
