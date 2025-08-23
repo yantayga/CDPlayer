@@ -9,6 +9,7 @@ import qualified Data.ByteString.Lazy as B
 
 import System.IO
 import qualified System.Console.Haskeline as HL
+import Control.Monad.Catch (catch, SomeException)
 
 data Settings = Settings {
         historyFile :: String,
@@ -35,11 +36,13 @@ decodeSettings s = decode s
 
 readSettings :: IO (Settings)
 readSettings = do
-    handle <- openFile "editorSettings.json" ReadWriteMode
-    fileContent <- B.hGetContents handle
+    fileContent <- (flip catch) exceptonHandler $ B.readFile "editorSettings.json"
     case decodeSettings fileContent of
         Nothing -> return defalultSettings
         Just s -> return s
+    where
+        exceptonHandler :: SomeException -> IO B.ByteString
+        exceptonHandler ex = return B.empty
 
 writeSettings :: Settings -> IO ()
 writeSettings settings = do
