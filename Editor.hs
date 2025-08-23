@@ -5,6 +5,7 @@ module Editor where
 
 import System.Console.Haskeline
 import Control.Monad (unless)
+import Control.Monad.IO.Class (liftIO)
 import System.IO
 
 import Editor.Settings
@@ -32,7 +33,8 @@ main = do
                         if exiting then return() else loop state
                     else return ()
                 Just input -> do
-                    case runCommand input state of
+                    res <- liftIO $ runCommand input state
+                    case res of
                         Left errorMessage -> outputStrLn errorMessage >> loop state
                         Right state' -> loop state'
 
