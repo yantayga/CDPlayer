@@ -6,8 +6,6 @@ module Editor.Commands where
 import CDDB.Types
 import CDDB.Process
 
-import System.Console.Haskeline
-
 import qualified Data.Map as M
 import Data.List (intercalate, isInfixOf)
 
@@ -44,11 +42,10 @@ runCommand cmd state =
         [] -> Left "Empty command"
         (cmdName: args) ->
             case M.lookup cmdName commands of
-                Nothing -> Left $ "Command '" ++ cmdName ++ "' not found. Possible variants: " ++ intercalate " " (findMostSimilar cmdName)
+                Nothing -> Left $ "Command '" ++ cmdName ++ "' not found. Possible variants: " ++ findMostSimilar cmdName
                 Just (CommandDef fn _) -> fn args state
-
-findMostSimilar :: String -> [String]
-findMostSimilar cmdname = (filter . isInfixOf) cmdname $ M.keys commands
+    where
+        findMostSimilar cmdName = intercalate " " $ (filter . isInfixOf) cmdName $ M.keys commands
 
 cmdTestErrMsg :: Command
 cmdTestErrMsg args _= Left $ "TEST ERROR MESSAGE: " ++ intercalate " " args
@@ -56,7 +53,7 @@ cmdTestErrMsg args _= Left $ "TEST ERROR MESSAGE: " ++ intercalate " " args
 cmdHelp :: Command
 cmdHelp args _ = Left $ M.foldrWithKey (addCommadHelp args) "Commands:\n" commands
     where
-        addCommadHelp names key (CommandDef _ def) acc = acc ++ "\n" ++ key ++ "\n\t" ++ def
+        addCommadHelp names key (CommandDef _ def) acc = if names == [] || elem key names then acc ++ "\n" ++ key ++ ":\n\t" ++ def else ""
 
 cmdCreateEmptyCDDB :: Command
 cmdCreateEmptyCDDB args state = Right initialProgramState
@@ -66,4 +63,3 @@ cmdSaveCDDB args state = undefined
 
 cmdLoadCDDB :: Command
 cmdLoadCDDB args state = undefined
-
