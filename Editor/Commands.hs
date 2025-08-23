@@ -36,6 +36,7 @@ commands = M.fromList [
         ("save", CommandDef cmdSaveCDDB "Save database with optional file name."),
         ("load", CommandDef cmdLoadCDDB "Load database with optional file name."),
         ("help", CommandDef cmdHelp "This help."),
+        ("quit", CommandDef cmdQuit "Quit program."),
         ("test", CommandDef cmdTestErrMsg "Show test error message with arguments.")
     ]
 
@@ -56,6 +57,9 @@ runCommand cmd state =
 cmdTestErrMsg :: Command
 cmdTestErrMsg args _= return $ Left $ "TEST ERROR MESSAGE: " ++ intercalate " " args
 
+cmdQuit :: Command
+cmdQuit = undefined
+
 cmdHelp :: Command
 cmdHelp args _ = return $ Left $ M.foldrWithKey (addCommandHelp args) "Commands:\n" commands
     where
@@ -69,7 +73,7 @@ cmdSaveCDDB args state = do
     today <- getCurrentTime
     case extractFileName args state of
         Left errMsg -> return $ Left errMsg
-        Right fn -> let updatedCDDB = updateCDDBDate (cddb state) today in do
+        Right fn -> let updatedCDDB = (cddb state) {date = today} in do
             B.writeFile fn $ encode (toJSON $ updatedCDDB)
             return $ Right state {cddb = updatedCDDB, isNotSaved = False}
 

@@ -11,8 +11,9 @@ import Data.Map
 import CDDB.SyntacticTree
 
 data CDDB = CDDB {
-    name :: Name,
-    version :: Version,
+    name :: String,
+    comment :: String,
+    version :: Integer,
     date :: UTCTime,
     templates :: PrimitiveTemplates,
     rules :: Rules,
@@ -77,7 +78,6 @@ data BinOp = Plus | Minus | Divide | Multiply
 type Name = String
 type VariableName = String
 type Comment = String
-type Version = Integer
 type Score = Double
 type Match = String
 

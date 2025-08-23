@@ -10,7 +10,14 @@ import Data.Time.Calendar.OrdinalDate
 import CDDB.Types
 
 emptyCDDB :: CDDB
-emptyCDDB = CDDB "" 1 (UTCTime (fromOrdinalDate 0 0) 0) (PrimitiveTemplates $ fromList []) (Rules []) (Knowledge [])
+emptyCDDB = CDDB {
+        name = "",
+        comment = "",
+        version = 1,
+        date = UTCTime (fromOrdinalDate 0 0) 0,
+        templates = PrimitiveTemplates $ fromList [],
+        rules = Rules [],
+        kn = Knowledge []
+    }
 
-updateCDDBDate :: CDDB -> UTCTime -> CDDB
-updateCDDBDate cddb date = cddb {date = date}
+

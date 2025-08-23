@@ -15,7 +15,7 @@ import Editor.Commands
 agreedNotToSave :: InputT IO (Bool)
 agreedNotToSave = do
     answer <- getInputChar "CDDB is not saved. Dou you really want to quit (y/N)?"
-    return $ answer == Just 'N'
+    return $ answer == Just 'N' || answer == Just 'n'
 
 main :: IO ()
 main = do
