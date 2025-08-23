@@ -108,7 +108,7 @@ cmdQuit :: Command
 cmdQuit = undefined
 
 cmdHelp :: CommandMap -> Command
-cmdHelp cmds args _ = return $ Left $ M.foldrWithKey (addCommandHelp args) "Commands:\n" cmds
+cmdHelp cmds args _ = return $ Left $ M.foldrWithKey (addCommandHelp args) "Commands:\nType <command> help for command help\n" cmds
     where
         addCommandHelp names key (CommandDef _ def subs) acc = if names == [] || elem key names then acc ++ "\n" ++ key ++ ":\n\t" ++ def else ""
 
