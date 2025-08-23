@@ -20,7 +20,7 @@ agreedNotToSave = do
 main :: IO ()
 main = do
         settings <- readSettings
-        runInputTWithPrefs (haskelinePrefsFromSettings settings) (haskelineSettionsFromSettings settings) $ loop initialProgramState
+        runInputTWithPrefs (haskelinePrefsFromSettings settings) (haskelineSettionsFromSettings settings) $ loop $ initialProgramState settings
         writeSettings settings
     where
         loop state = do
