@@ -28,31 +28,73 @@ type Command = Arguments -> ProgramState -> IO (Either String ProgramState)
 
 type HelpString = String
 
-data CommandDef = CommandDef Command HelpString
+data CommandDef = CommandDef Command HelpString (Maybe (M.Map String CommandDef))
 
 commands :: M.Map String CommandDef
 commands = M.fromList [
-        ("new",  CommandDef cmdCreateEmptyCDDB "    Create new database."),
-        ("save", CommandDef cmdSaveCDDB "Save database with optional file name."),
-        ("load", CommandDef cmdLoadCDDB "Load database with optional file name."),
-        ("help", CommandDef cmdHelp "This help."),
-        ("quit", CommandDef cmdQuit "Quit program."),
-        ("test", CommandDef cmdTestErrMsg "Show test error message with arguments.")
+        ("new",  CommandDef cmdCreateEmptyCDDB "Create new database." Nothing),
+        ("save", CommandDef cmdSaveCDDB "Save database with optional file name." Nothing),
+        ("load", CommandDef cmdLoadCDDB "Load database with optional file name." Nothing),
+        ("help", CommandDef (cmdHelp commands) "This help." Nothing),
+        ("read", CommandDef (runCommand readCommands) "Read database field." Nothing),
+        ("write", CommandDef (runCommand writeCommands) "Write database field.." Nothing),
+        ("quit", CommandDef cmdQuit "Quit program." Nothing),
+        ("test", CommandDef cmdTestErrMsg "Show test error message with arguments." Nothing)
+    ]
+
+readCommands :: M.Map String CommandDef
+readCommands = M.fromList [
+        ("help", CommandDef (cmdHelp readCommands) "This help." Nothing),
+        ("name", CommandDef (cmdReadCDDBField name) "Read database name." Nothing),
+        ("comment", CommandDef (cmdReadCDDBField comment) "Read database comment." Nothing),
+        ("version", CommandDef (cmdReadCDDBField version) "Read database version." Nothing),
+        ("date", CommandDef (cmdReadCDDBField date) "Read database date." Nothing)
+    ]
+
+writeCommands :: M.Map String CommandDef
+writeCommands = M.fromList [
+        ("help", CommandDef (cmdHelp writeCommands) "This help." Nothing),
+        ("name", CommandDef (cmdWriteCDDBField set_name) "Write database name." Nothing),
+        ("comment", CommandDef (cmdWriteCDDBField set_comment) "Write database comment." Nothing),
+        ("version", CommandDef (cmdWriteCDDBField set_version) "Write database version." Nothing),
+        ("date", CommandDef (cmdWriteCDDBField set_date) "Write database date." Nothing)
     ]
 
 initialProgramState :: ProgramState
 initialProgramState = ProgramState {cddb = emptyCDDB, cddbFileName = Nothing, isNotSaved = True, currentRule = Nothing}
 
-runCommand :: String -> ProgramState -> IO (Either String ProgramState)
-runCommand cmd state =
-    case words cmd of
+runCommand :: M.Map String CommandDef -> Command
+runCommand cmds cmd state =
+    case cmd of
         [] -> return $ Left "Empty command"
         (cmdName: args) ->
-            case M.lookup cmdName commands of
+            case M.lookup cmdName cmds of
                 Nothing -> return $ Left $ "Command '" ++ cmdName ++ "' not found. Possible variants: " ++ findMostSimilar cmdName
-                Just (CommandDef fn _) -> fn args state
+                Just (CommandDef fn _ subs) -> fn args state
     where
-        findMostSimilar cmdName = intercalate " " $ (filter . isInfixOf) cmdName $ M.keys commands
+        findMostSimilar cmdName = intercalate " " $ (filter . isInfixOf) cmdName $ M.keys cmds
+
+cmdReadCDDBField :: Show a => (CDDB -> a) -> Command
+cmdReadCDDBField accessor [] state = return $ Left $ show $ accessor $ cddb state
+cmdReadCDDBField _ _ _ = return $ Left "Too many arguments"
+
+cmdWriteCDDBField :: Read a => (CDDB -> a -> CDDB) -> Command
+cmdWriteCDDBField accessor (val:[]) state = return $ Right $ state {cddb = accessor (cddb state) (read val)}
+cmdWriteCDDBField _ [] _ = return $ Left "Not enough arguments"
+cmdWriteCDDBField _ _ _ = return $ Left "Too many arguments"
+
+set_name :: CDDB -> String -> CDDB
+set_name cddb name = cddb {name = name}
+
+set_comment :: CDDB -> String -> CDDB
+set_comment cddb comment = cddb {comment = comment}
+
+set_version :: CDDB -> Integer -> CDDB
+set_version cddb version = cddb {version = version}
+
+set_date :: CDDB -> UTCTime -> CDDB
+set_date cddb date = cddb {date = date}
+
 
 cmdTestErrMsg :: Command
 cmdTestErrMsg args _= return $ Left $ "TEST ERROR MESSAGE: " ++ intercalate " " args
@@ -60,10 +102,10 @@ cmdTestErrMsg args _= return $ Left $ "TEST ERROR MESSAGE: " ++ intercalate " " 
 cmdQuit :: Command
 cmdQuit = undefined
 
-cmdHelp :: Command
-cmdHelp args _ = return $ Left $ M.foldrWithKey (addCommandHelp args) "Commands:\n" commands
+cmdHelp :: M.Map String CommandDef -> Command
+cmdHelp cmds args _ = return $ Left $ M.foldrWithKey (addCommandHelp args) "Commands:\n" cmds
     where
-        addCommandHelp names key (CommandDef _ def) acc = if names == [] || elem key names then acc ++ "\n" ++ key ++ ":\n\t" ++ def else ""
+        addCommandHelp names key (CommandDef _ def subs) acc = if names == [] || elem key names then acc ++ "\n" ++ key ++ ":\n\t" ++ def else ""
 
 cmdCreateEmptyCDDB :: Command
 cmdCreateEmptyCDDB args state = return $ Right initialProgramState

@@ -34,7 +34,7 @@ main = do
                         if exiting then return() else loop state
                     else return ()
                 Just input -> (flip catch) exceptonHandler $ do
-                    res <- liftIO $ runCommand input state
+                    res <- liftIO $ runCommand commands (words input) state
                     case res of
                         Left errorMessage -> outputStrLn errorMessage >> loop state
                         Right state' -> loop state'
