@@ -3,26 +3,18 @@
 
 module Editor where
 
+import System.Console.Haskeline
 import Control.Monad (unless)
 import System.IO
 
 main :: IO ()
-main = do
-  input <- readInput
-
-  unless (input == ":quit")
-       $ printResponse (evalCommand input)
-      >> main
-
-
-readInput :: IO String
-readInput = putStr "CDDB> "
-     >> hFlush stdout
-     >> getLine
-
-
-evalCommand :: String -> String
-evalCommand input = input
-
-printResponse :: String -> IO ()
-printResponse = putStrLn
+main = runInputT defaultSettings loop
+   where
+       loop :: InputT IO ()
+       loop = do
+           minput <- getInputLine "CDDB> "
+           case minput of
+               Nothing -> return ()
+               Just "quit" -> return ()
+               Just input -> do outputStrLn $ "Input was: " ++ input
+                                loop
