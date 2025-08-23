@@ -6,6 +6,7 @@ module Editor where
 import System.Console.Haskeline
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Catch (catch, SomeException)
 import System.IO
 
 import Editor.Settings
@@ -32,10 +33,11 @@ main = do
                         exiting <- agreedNotToSave
                         if exiting then return() else loop state
                     else return ()
-                Just input -> do
+                Just input -> (flip catch) exceptonHandler $ do
                     res <- liftIO $ runCommand input state
                     case res of
                         Left errorMessage -> outputStrLn errorMessage >> loop state
                         Right state' -> loop state'
 
-
+        exceptonHandler :: SomeException -> InputT IO ()
+        exceptonHandler ex = outputStrLn $ "Exception" ++ show ex

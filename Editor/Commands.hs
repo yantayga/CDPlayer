@@ -76,7 +76,7 @@ cmdLoadCDDB args state = do
     case extractFileName args state of
         Left errMsg -> return $ Left errMsg
         Right fn -> do
-            handle <- openFile fn ReadWriteMode
+            handle <- openFile fn ReadMode
             fileContent <- B.hGetContents handle
             case decodeCDDB fileContent of
                 Nothing -> return $ Left "Error reading file "
