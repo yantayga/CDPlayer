@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module Editor.Commands where
+module Editor.Commands (runMainCommand, initialProgramState, isNotSaved)  where
 
 import CDDB.Types
 import CDDB.Process
@@ -28,9 +28,11 @@ type Command = Arguments -> ProgramState -> IO (Either String ProgramState)
 
 type HelpString = String
 
-data CommandDef = CommandDef Command HelpString (Maybe (M.Map String CommandDef))
+data CommandDef = CommandDef Command HelpString (Maybe (CommandMap))
 
-commands :: M.Map String CommandDef
+type CommandMap = M.Map String CommandDef
+
+commands :: CommandMap
 commands = M.fromList [
         ("new",  CommandDef cmdCreateEmptyCDDB "Create new database." Nothing),
         ("save", CommandDef cmdSaveCDDB "Save database with optional file name." Nothing),
@@ -42,7 +44,7 @@ commands = M.fromList [
         ("test", CommandDef cmdTestErrMsg "Show test error message with arguments." Nothing)
     ]
 
-readCommands :: M.Map String CommandDef
+readCommands :: CommandMap
 readCommands = M.fromList [
         ("help", CommandDef (cmdHelp readCommands) "This help." Nothing),
         ("name", CommandDef (cmdReadCDDBField name) "Read database name." Nothing),
@@ -51,7 +53,7 @@ readCommands = M.fromList [
         ("date", CommandDef (cmdReadCDDBField date) "Read database date." Nothing)
     ]
 
-writeCommands :: M.Map String CommandDef
+writeCommands :: CommandMap
 writeCommands = M.fromList [
         ("help", CommandDef (cmdHelp writeCommands) "This help." Nothing),
         ("name", CommandDef (cmdWriteCDDBField set_name) "Write database name." Nothing),
@@ -63,7 +65,10 @@ writeCommands = M.fromList [
 initialProgramState :: ProgramState
 initialProgramState = ProgramState {cddb = emptyCDDB, cddbFileName = Nothing, isNotSaved = True, currentRule = Nothing}
 
-runCommand :: M.Map String CommandDef -> Command
+runMainCommand :: Command
+runMainCommand = runCommand commands
+
+runCommand :: CommandMap -> Command
 runCommand cmds cmd state =
     case cmd of
         [] -> return $ Left "Empty command"
@@ -102,7 +107,7 @@ cmdTestErrMsg args _= return $ Left $ "TEST ERROR MESSAGE: " ++ intercalate " " 
 cmdQuit :: Command
 cmdQuit = undefined
 
-cmdHelp :: M.Map String CommandDef -> Command
+cmdHelp :: CommandMap -> Command
 cmdHelp cmds args _ = return $ Left $ M.foldrWithKey (addCommandHelp args) "Commands:\n" cmds
     where
         addCommandHelp names key (CommandDef _ def subs) acc = if names == [] || elem key names then acc ++ "\n" ++ key ++ ":\n\t" ++ def else ""
