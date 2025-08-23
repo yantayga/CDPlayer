@@ -40,8 +40,7 @@ commands = M.fromList [
         ("help", CommandDef (cmdHelp commands) "This help." Nothing),
         ("read", CommandDef (runCommand readCommands) "Read database field." Nothing),
         ("write", CommandDef (runCommand writeCommands) "Write database field.." Nothing),
-        ("quit", CommandDef cmdQuit "Quit program." Nothing),
-        ("test", CommandDef cmdTestErrMsg "Show test error message with arguments." Nothing)
+        ("quit", CommandDef cmdQuit "Quit program." Nothing)
     ]
 
 readCommands :: CommandMap
@@ -99,10 +98,6 @@ set_version cddb version = cddb {version = version}
 
 set_date :: CDDB -> UTCTime -> CDDB
 set_date cddb date = cddb {date = date}
-
-
-cmdTestErrMsg :: Command
-cmdTestErrMsg args _= return $ Left $ "TEST ERROR MESSAGE: " ++ intercalate " " args
 
 cmdQuit :: Command
 cmdQuit = undefined
