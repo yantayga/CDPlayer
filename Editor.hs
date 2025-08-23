@@ -7,6 +7,8 @@ import System.Console.Haskeline
 import Control.Monad (unless)
 import System.IO
 
+import Editor.Settings
+
 main :: IO ()
 main = runInputT defaultSettings loop
    where
