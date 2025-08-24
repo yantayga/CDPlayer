@@ -40,22 +40,6 @@ matchRules t cddb = filter (matchRule t) $ rules cddb
 matchRule :: SyntacticTree -> Rule -> Bool
 matchRule t (Rule _ _ filter _ _ _) = matchFilter t filter
 
-matchFilter :: SyntacticTree -> FilterExpression -> Bool
-matchFilter _ Asterix = True
-matchFilter (Tag id ts) (FilterTag fid fs) = id == fid && matchFilter' ts fs
-matchFilter (Word s) (FilterWord fs) = s == fs
-matchFilter _ _ = False
-
-matchFilter' :: [SyntacticTree] -> [FilterExpression] -> Bool
-matchFilter' [] [] = True
-matchFilter' _ [] = False
-matchFilter' [] (Asterix: sfs) = matchFilter' [] sfs
-matchFilter' [] _ = False
-matchFilter' ts@(t: sts) fs@(Asterix: sfs) = matchFilter' sts fs  -- maitched t with *, not consumed t, consumed *
-                                          || matchFilter' ts sfs  -- maitched [] with *, consumed *
-                                          -- || matchFilter' sts sfs -- maitched t with *, consumed t, not consumed *
-matchFilter' (t: sts) (f: sfs) = matchFilter t f &&  matchFilter' sts sfs
-
 evaluateRule :: Context -> Rule -> Either Context Context
 evaluateRule ctx rule@(Rule _ ruleScore _ locals conditions actions) =
     if applicable
