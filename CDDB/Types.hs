@@ -41,7 +41,7 @@ type Actions = [Action]
 data Primitive = Primitive Name FieldVariables deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Action = Stop
-    | Delete VariableName
+    | Delete [VariableName]
     | AddFact Primitive
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 

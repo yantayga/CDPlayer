@@ -11,11 +11,14 @@ import qualified Data.Map as M
 
 import CDDB.Types
 
-newtype VariableStates = VariableStates (M.Map VariableName Constant)
+type VariableStates = M.Map VariableName Constant
+
+emptyVariableStates :: VariableStates
+emptyVariableStates = M.empty
 
 evaluateExpression :: VariableStates -> Expression -> Constant
 evaluateExpression _ (Constant const) = const
-evaluateExpression (VariableStates map) (Variable name) = fromMaybe Null $ M.lookup name map
+evaluateExpression map (Variable name) = fromMaybe Null $ M.lookup name map
 evaluateExpression states (UnOp op expr) = evaluateUnOpExpression op (evaluateExpression states expr)
 evaluateExpression states (BinOp op expr1 expr2) = evaluateBinOpExpression op (evaluateExpression states expr1) (evaluateExpression states expr2)
 
