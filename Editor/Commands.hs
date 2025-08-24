@@ -62,34 +62,34 @@ setCommands = M.fromList [
 
 getCDDBCommands :: CommandMap
 getCDDBCommands = M.fromList [
-        ("help", CommandDef (cmdHelp getCDDBCommands) "This help." Nothing),
-        ("name", CommandDef (cmdGetField cddb name) "Get database name." Nothing),
-        ("comment", CommandDef (cmdGetField cddb comment) "Get database comment." Nothing),
-        ("version", CommandDef (cmdGetField cddb version) "Get database version." Nothing),
-        ("date", CommandDef (cmdGetField cddb date) "Get database date." Nothing)
+        ("name", CommandDef (cmdGetField $ makeGetter cddb name) "Get database name." Nothing),
+        ("comment", CommandDef (cmdGetField $ makeGetter cddb comment) "Get database comment." Nothing),
+        ("version", CommandDef (cmdGetField $ makeGetter cddb version) "Get database version." Nothing),
+        ("date", CommandDef (cmdGetField $ makeGetter cddb date) "Get database date." Nothing),
+        ("help", CommandDef (cmdHelp getCDDBCommands) "This help." Nothing)
     ]
 
 setCDDBCommands :: CommandMap
 setCDDBCommands = M.fromList [
-        ("help", CommandDef (cmdHelp setCDDBCommands) "This help." Nothing),
-        ("name", CommandDef (cmdSetField set_cddb cddb set_name) "Set database name." Nothing),
-        ("comment", CommandDef (cmdSetField set_cddb cddb set_comment) "Set database comment." Nothing),
-        ("version", CommandDef (cmdSetField set_cddb cddb set_version) "Set database version." Nothing),
-        ("date", CommandDef (cmdSetField set_cddb cddb set_date) "Set database date." Nothing)
+        ("name", CommandDef (cmdSetField $ makeSetter set_cddb set_name cddb) "Set database name." Nothing),
+        ("comment", CommandDef (cmdSetField $ makeSetter set_cddb set_comment cddb) "Set database comment." Nothing),
+        ("version", CommandDef (cmdSetField $ makeSetter set_cddb set_version cddb) "Set database version." Nothing),
+        ("date", CommandDef (cmdSetField $ makeSetter set_cddb set_date cddb) "Set database date." Nothing),
+        ("help", CommandDef (cmdHelp setCDDBCommands) "This help." Nothing)
     ]
 
 getSettingsCommands :: CommandMap
 getSettingsCommands = M.fromList [
-        ("help", CommandDef (cmdHelp getSettingsCommands) "This help." Nothing),
-        ("historyFile", CommandDef (cmdGetField settings historyFile) "Get histroy file." Nothing),
-        ("autoAddHistory", CommandDef (cmdGetField settings autoAddHistory) "Get enable/disable add command to history." Nothing)
+        ("historyFile", CommandDef (cmdGetField $ makeGetter settings historyFile) "Get histroy file." Nothing),
+        ("autoAddHistory", CommandDef (cmdGetField $ makeGetter settings autoAddHistory) "Get enable/disable add command to history." Nothing),
+        ("help", CommandDef (cmdHelp getSettingsCommands) "This help." Nothing)
     ]
 
 setSettingsCommands :: CommandMap
 setSettingsCommands = M.fromList [
-        ("help", CommandDef (cmdHelp setSettingsCommands) "This help." Nothing),
-        ("historyFile", CommandDef (cmdSetField set_settings settings set_historyFile) "Set histroy file." Nothing),
-        ("autoAddHistory", CommandDef (cmdSetField set_settings settings set_autoAddHistory) "Eable/disable add command to history." Nothing)
+        ("historyFile", CommandDef (cmdSetField $ makeSetter set_settings set_historyFile settings) "Set histroy file." Nothing),
+        ("autoAddHistory", CommandDef (cmdSetField $ makeSetter set_settings set_autoAddHistory settings) "Eable/disable add command to history." Nothing),
+        ("help", CommandDef (cmdHelp setSettingsCommands) "This help." Nothing)
     ]
 
 initialProgramState :: Settings -> ProgramState
@@ -109,14 +109,20 @@ runCommand cmds cmd state =
     where
         findMostSimilar cmdName = intercalate " " $ (filter . isInfixOf) cmdName $ M.keys cmds
 
-cmdGetField :: Show b => (ProgramState -> a) -> (a -> b) -> Command
-cmdGetField state_accessor object_accessor [] state = return $ Left $ show $ object_accessor $ state_accessor state
-cmdGetField _ _ _ _ = return $ Left "Too many arguments"
+cmdGetField :: Show b => (ProgramState -> b) -> Command
+cmdGetField accessor [] state = return $ Left $ show $ accessor state
+cmdGetField _ _ _ = return $ Left "Too many arguments"
 
-cmdSetField :: Read b => (ProgramState -> a -> ProgramState) -> (ProgramState -> a) -> (a -> b -> a) -> Command
-cmdSetField state_setter state_accessor object_setter (val:[]) state = return $ Right $ state_setter state (object_setter (state_accessor state) (read val))
-cmdSetField _ _ _ [] _ = return $ Left "Not enough arguments"
-cmdSetField _ _ _ _ _ = return $ Left "Too many arguments"
+cmdSetField :: Read b => (ProgramState -> b -> ProgramState) -> Command
+cmdSetField setter (val:[]) state = return $ Right $ setter state (read val)
+cmdSetField _ [] _ = return $ Left "Not enough arguments"
+cmdSetField _ _ _ = return $ Left "Too many arguments"
+
+makeGetter :: (a -> b) -> (b -> c) -> (a -> c)
+makeGetter = flip (.)
+
+makeSetter :: (a -> b -> a) -> (b -> c -> b) -> (a -> b) -> (a -> c -> a)
+makeSetter outer inner accessor = \a c -> outer a $ inner (accessor a) c
 
 set_cddb :: ProgramState -> CDDB -> ProgramState
 set_cddb state cddb = state {cddb = cddb}
