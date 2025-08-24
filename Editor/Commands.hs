@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module Editor.Commands (runMainCommand, initialProgramState, isNotSaved)  where
+module Editor.Commands (runMainCommand, initialProgramState, isNotSaved, settings)  where
 
 import CDDB.Types
 import CDDB.Process

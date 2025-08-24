@@ -19,9 +19,10 @@ agreedNotToSave = do
 
 main :: IO ()
 main = do
-        settings <- readSettings
-        runInputTWithPrefs (haskelinePrefsFromSettings settings) (haskelineSettionsFromSettings settings) $ loop $ initialProgramState settings
-        writeSettings settings
+        startSettings <- readSettings
+        let state = initialProgramState startSettings in do
+            runInputTWithPrefs (haskelinePrefsFromSettings startSettings) (haskelineSettionsFromSettings startSettings) $ loop state
+            writeSettings $ settings state
     where
         loop state = do
             minput <- getInputLine "CDDB> "
