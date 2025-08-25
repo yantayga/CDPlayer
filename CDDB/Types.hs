@@ -64,7 +64,7 @@ data Constant = Error
     | CDouble Double
     | CString String
     | CPrimitive Fact
-    | CTreePart SyntacticTree
+    | CTreePart TreePath
     | CType Name
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -80,4 +80,6 @@ type Name = String
 type Comment = String
 type Score = Double
 type Match = String
+type TreePos = Int
+type TreePath = [TreePos]
 

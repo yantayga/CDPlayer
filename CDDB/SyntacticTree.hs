@@ -20,7 +20,6 @@ import CDDB.Parsers
 type VariableName = String
 type TagId = String
 
--- Tree like "S" ["NP" ["DET" [Word "the"], "N" [Word "cat"]], "VP" [Word "chase"], "NP" ["DET" [Word "a"], "N" [Word "mouse"]]]
 data SyntacticTree = Tag TagId [SyntacticTree]
     | Word TagId String
     deriving (Eq, Generic)
@@ -37,18 +36,25 @@ instance Show SyntacticTree where
     show (Word id w) = id ++ "(" ++ show w ++ ")"
 
 instance Read SyntacticTree where
-    readPrec = choice [readTag, readWord Word]
+    readPrec = choice [readTag, readWord]
         where
             readTag = do
                 L.Ident n <- lexP
                 l <- step readListPrec
                 return $ Tag n l
+            readWord = do
+                L.Ident n <- lexP
+                paren
+                    ( do
+                        L.String s <- lexP
+                        return $ Word n s
+                    )
     readListPrec = readListPrecDefault
 
 -- Tree like S [*, NP, VP [VPP ["chase"]], *]
 data FilterExpression = Asterisk
     | FilterTag (Maybe VariableName) TagId [FilterExpression]
-    | FilterWord TagId String
+    | FilterWord (Maybe VariableName) TagId String
     deriving (Eq, Generic)
 
 instance ToJSON FilterExpression where
@@ -57,15 +63,16 @@ instance ToJSON FilterExpression where
 instance FromJSON FilterExpression where
    parseJSON = tryParseJSON
 
-instance Show    where
+instance Show FilterExpression where
     show :: FilterExpression -> String
     show Asterisk = "*"
     show (FilterTag Nothing id ts) = id ++ "[" ++ (intercalate ", " $ map show ts) ++ "]"
     show (FilterTag (Just vn) id ts) = vn ++ ":" ++ id ++ "[" ++ (intercalate ", " $ map show ts) ++ "]"
-    show (FilterWord id w) = id ++ "(" ++ show w ++ ")"
+    show (FilterWord Nothing id w) = id ++ "(" ++ show w ++ ")"
+    show (FilterWord (Just vn) id w) = vn ++ ":" ++ id ++ "(" ++ show w ++ ")"
 
 instance Read FilterExpression where
-    readPrec = choice [readAsterisk, readTag, readTagWithVAriable, readWord FilterWord]
+    readPrec = choice [readAsterisk, readTag, readTagWithVariable, readWord, readWordWithVariable]
         where
             readAsterisk = do
                 L.Symbol "*" <- lexP
@@ -74,12 +81,28 @@ instance Read FilterExpression where
                 L.Ident n <- lexP
                 l <- step readListPrec
                 return $ FilterTag Nothing n l
-            readTagWithVAriable = do
+            readTagWithVariable = do
                 L.Ident vn <- lexP
                 L.Symbol ":" <- lexP
                 L.Ident n <- lexP
                 l <- step readListPrec
                 return $ FilterTag (Just vn) n l
+            readWord = do
+                L.Ident n <- lexP
+                paren
+                    ( do
+                        L.String s <- lexP
+                        return $ FilterWord Nothing n s
+                    )
+            readWordWithVariable = do
+                L.Ident vn <- lexP
+                L.Symbol ":" <- lexP
+                L.Ident n <- lexP
+                paren
+                    ( do
+                        L.String s <- lexP
+                        return $ FilterWord (Just vn) n s
+                    )
     readListPrec = readListPrecDefault
 
 tryParseJSON (String s) = case (readMaybe $ unpack s) of
@@ -87,10 +110,3 @@ tryParseJSON (String s) = case (readMaybe $ unpack s) of
     Just t -> return t
 tryParseJSON _ = empty
 
-readWord c = do
-    L.Ident n <- lexP
-    paren
-        ( do
-            L.String s <- lexP
-            return $ c n s
-        )
