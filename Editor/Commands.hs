@@ -6,6 +6,7 @@ module Editor.Commands (runMainCommand, initialProgramState, isNotSaved, setting
 import CDDB.Types
 import CDDB.Process
 import CDDB.Runner
+import CDDB.SyntacticTree
 import Editor.Settings
 import Editor.Tests
 
@@ -15,6 +16,7 @@ import Data.List (intercalate, isInfixOf)
 import Data.Either.Extra (maybeToEither)
 import Data.Aeson (encode, decode, toJSON, fromJSON)
 import qualified Data.ByteString.Lazy as B
+import Text.Read
 
 import System.IO
 
@@ -23,6 +25,7 @@ data ProgramState = ProgramState {
         cddb :: CDDB,
         cddbFileName :: Maybe String,
         isNotSaved :: Bool,
+        treeToParse :: Maybe SyntacticTree,
         currentTemplate :: Maybe Name,
         currentRule :: Maybe Rule
     }
@@ -43,14 +46,15 @@ commands = M.fromList [
         ("save", CommandDef cmdSaveCDDB "Save database with optional file name." Nothing),
         ("load", CommandDef cmdLoadCDDB "Load database with optional file name." Nothing),
         ("help", CommandDef (cmdHelp commands) "This help." Nothing),
-        ("get", CommandDef (runCommand getCommands) "Set objects field." Nothing),
-        ("set", CommandDef (runCommand setCommands) "Get objects field.." Nothing),
+        ("get", CommandDef (runCommand getCommands) "Get objects field." Nothing),
+        ("set", CommandDef (runCommand setCommands) "Set objects field.." Nothing),
         ("quit", CommandDef cmdQuit "Quit program." Nothing)
     ]
 
 getCommands :: CommandMap
 getCommands = M.fromList [
         ("help", CommandDef (cmdHelp getCommands) "This help." Nothing),
+        ("tree", CommandDef (cmdGetField treeToParse) "Get current syntactic tree." Nothing),
         ("cddb", CommandDef (runCommand getCDDBCommands) "Get database name." Nothing),
         ("settings", CommandDef (runCommand getSettingsCommands) "Get database comment." Nothing)
     ]
@@ -58,6 +62,7 @@ getCommands = M.fromList [
 setCommands :: CommandMap
 setCommands = M.fromList [
         ("help", CommandDef (cmdHelp setCommands) "This help." Nothing),
+        ("tree", CommandDef (cmdSetTree) "Set current syntactic tree." Nothing),
         ("cddb", CommandDef (runCommand setCDDBCommands) "Set database fields." Nothing),
         ("settings", CommandDef (runCommand setSettingsCommands) "Set settings fields." Nothing)
     ]
@@ -90,12 +95,12 @@ getSettingsCommands = M.fromList [
 setSettingsCommands :: CommandMap
 setSettingsCommands = M.fromList [
         ("historyFile", CommandDef (cmdSetField $ makeSetter set_settings set_historyFile settings) "Set histroy file." Nothing),
-        ("autoAddHistory", CommandDef (cmdSetField $ makeSetter set_settings set_autoAddHistory settings) "Eable/disable add command to history." Nothing),
+        ("autoAddHistory", CommandDef (cmdSetField $ makeSetter set_settings set_autoAddHistory settings) "Enable/disable add command to history." Nothing),
         ("help", CommandDef (cmdHelp setSettingsCommands) "This help." Nothing)
     ]
 
 initialProgramState :: Settings -> ProgramState
-initialProgramState settings = ProgramState {settings = settings, cddb = emptyCDDB, cddbFileName = Nothing, isNotSaved = True, currentTemplate = Nothing, currentRule = Nothing}
+initialProgramState settings = ProgramState {settings = settings, cddb = emptyCDDB, cddbFileName = Nothing, isNotSaved = True, treeToParse = Nothing, currentTemplate = Nothing, currentRule = Nothing}
 
 runMainCommand :: Command
 runMainCommand = runCommand commands
@@ -111,12 +116,21 @@ runCommand cmds cmd state =
     where
         findMostSimilar cmdName = intercalate " " $ (filter . isInfixOf) cmdName $ M.keys cmds
 
+cmdSetTree :: Command
+cmdSetTree args state = let tree = (readEither $ unwords args) in
+        case tree of
+                Left err -> return $ Left err
+                Right a -> return $ Right $ state {treeToParse = Just a}
+
 cmdGetField :: Show b => (ProgramState -> b) -> Command
 cmdGetField accessor [] state = return $ Left $ show $ accessor state
 cmdGetField _ _ _ = return $ Left "Too many arguments"
 
 cmdSetField :: Read b => (ProgramState -> b -> ProgramState) -> Command
-cmdSetField setter (val:[]) state = return $ Right $ setter state (read val)
+cmdSetField setter (val:[]) state = let v = readEither val in
+        case v of
+                Left err -> return $ Left err
+                Right a -> return $ Right $ setter state a
 cmdSetField _ [] _ = return $ Left "Not enough arguments"
 cmdSetField _ _ _ = return $ Left "Too many arguments"
 
