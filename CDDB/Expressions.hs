@@ -10,6 +10,7 @@ import Data.Maybe
 import qualified Data.Map as M
 
 import CDDB.Types
+import CDDB.SyntacticTree
 
 type VariableStates = M.Map VariableName Constant
 

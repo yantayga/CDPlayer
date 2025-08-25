@@ -10,8 +10,8 @@ import CDDB.SyntacticTree
 testSTree1 = Tag "S" []
 testSTree2 = Tag "S" [Tag "NP" [Word "DET" "the", Word "N" "cat"], Tag "VP" [Word "V" "chase", Tag "NP" [Word "DET" "a", Word "N" "mouse"]]]
 
-testFilter1 = FilterTag "S" []
-testFilter2 = FilterTag "S" [FilterTag "NP" [], FilterTag "VP" [FilterWord "V" "chase"], Asterisk]
+testFilter1 = FilterTag Nothing "S" []
+testFilter2 = FilterTag Nothing "S" [FilterTag (Just "np") "NP" [], FilterTag (Just "vp") "VP" [FilterWord "V" "chase"], Asterisk]
 
 testCDDB :: CDDB
 testCDDB = CDDB {

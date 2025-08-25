@@ -17,6 +17,7 @@ import qualified Text.Read.Lex as L
 
 import CDDB.Parsers
 
+type VariableName = String
 type TagId = String
 
 -- Tree like "S" ["NP" ["DET" [Word "the"], "N" [Word "cat"]], "VP" [Word "chase"], "NP" ["DET" [Word "a"], "N" [Word "mouse"]]]
@@ -36,12 +37,17 @@ instance Show SyntacticTree where
     show (Word id w) = id ++ "(" ++ show w ++ ")"
 
 instance Read SyntacticTree where
-    readPrec = choice [readTag Tag, readWord Word]
+    readPrec = choice [readTag, readWord Word]
+        where
+            readTag = do
+                L.Ident n <- lexP
+                l <- step readListPrec
+                return $ Tag n l
     readListPrec = readListPrecDefault
 
 -- Tree like S [*, NP, VP [VPP ["chase"]], *]
 data FilterExpression = Asterisk
-    | FilterTag TagId [FilterExpression]
+    | FilterTag (Maybe VariableName) TagId [FilterExpression]
     | FilterWord TagId String
     deriving (Eq, Generic)
 
@@ -51,30 +57,35 @@ instance ToJSON FilterExpression where
 instance FromJSON FilterExpression where
    parseJSON = tryParseJSON
 
-instance Show FilterExpression where
+instance Show    where
     show :: FilterExpression -> String
     show Asterisk = "*"
-    show (FilterTag id ts) = id ++ "[" ++ (intercalate ", " $ map show ts) ++ "]"
+    show (FilterTag Nothing id ts) = id ++ "[" ++ (intercalate ", " $ map show ts) ++ "]"
+    show (FilterTag (Just vn) id ts) = vn ++ ":" ++ id ++ "[" ++ (intercalate ", " $ map show ts) ++ "]"
     show (FilterWord id w) = id ++ "(" ++ show w ++ ")"
 
 instance Read FilterExpression where
-    readPrec = choice [readAsterisk, readTag FilterTag, readWord FilterWord]
+    readPrec = choice [readAsterisk, readTag, readTagWithVAriable, readWord FilterWord]
         where
             readAsterisk = do
                 L.Symbol "*" <- lexP
                 return Asterisk
+            readTag = do
+                L.Ident n <- lexP
+                l <- step readListPrec
+                return $ FilterTag Nothing n l
+            readTagWithVAriable = do
+                L.Ident vn <- lexP
+                L.Symbol ":" <- lexP
+                L.Ident n <- lexP
+                l <- step readListPrec
+                return $ FilterTag (Just vn) n l
     readListPrec = readListPrecDefault
 
 tryParseJSON (String s) = case (readMaybe $ unpack s) of
     Nothing -> empty
     Just t -> return t
 tryParseJSON _ = empty
-
-
-readTag c = do
-    L.Ident n <- lexP
-    l <- step readListPrec
-    return $ c n l
 
 readWord c = do
     L.Ident n <- lexP

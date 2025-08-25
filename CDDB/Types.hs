@@ -52,7 +52,6 @@ data Fact = Fact Name FieldConstants deriving (Eq, Show, Generic, ToJSON, FromJS
 type FieldConstants = [Constant]
 
 data Expression = Constant Constant
-    | TreePart SyntacticTree
     | Variable VariableName
     | UnOp UnOp Expression
     | BinOp BinOp Expression Expression
@@ -65,6 +64,7 @@ data Constant = Error
     | CDouble Double
     | CString String
     | CPrimitive Fact
+    | CTreePart SyntacticTree
     | CType Name
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -77,7 +77,6 @@ data BinOp = Plus | Minus | Divide | Multiply
 
 -- Aliases
 type Name = String
-type VariableName = String
 type Comment = String
 type Score = Double
 type Match = String

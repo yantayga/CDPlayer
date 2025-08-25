@@ -61,19 +61,20 @@ matchRule t r@(Rule _ _ filterExpr _ _ _) = (r,) <$> matchFilter t filterExpr
 
 matchFilter :: SyntacticTree -> FilterExpression -> Maybe VariableStates
 matchFilter _ Asterisk = Just emptyVariableStates
-matchFilter (Tag id ts) (FilterTag fid fs) = guard (id == fid) >> (matchFilter' ts fs)
+matchFilter t@(Tag id ts) (FilterTag Nothing fid fs) = guard (id == fid) >> (matchFilters ts fs)
+matchFilter t@(Tag id ts) (FilterTag (Just vn) fid fs) = guard (id == fid) >> (matchFilters ts fs) >>= \vs -> Just $ M.insert vn (CTreePart t) vs
 matchFilter (Word id s) (FilterWord fid fs) = guard (id == fid && s == fs) >> Just emptyVariableStates
 matchFilter _ _ = Nothing
 
-matchFilter' :: [SyntacticTree] -> [FilterExpression] -> Maybe VariableStates
-matchFilter' [] [] = Just emptyVariableStates
-matchFilter' _ [] = Nothing
-matchFilter' [] (Asterisk: sfs) = matchFilter' [] sfs
-matchFilter' [] _ = Nothing
-matchFilter' ts@(t: sts) fs@(Asterisk: sfs) = matchFilter' sts fs <|> matchFilter' ts sfs
-matchFilter' (t: sts) (f: sfs) = do
+matchFilters :: [SyntacticTree] -> [FilterExpression] -> Maybe VariableStates
+matchFilters [] [] = Just emptyVariableStates
+matchFilters _ [] = Nothing
+matchFilters [] (Asterisk: sfs) = matchFilters [] sfs
+matchFilters [] _ = Nothing
+matchFilters ts@(t: sts) fs@(Asterisk: sfs) = matchFilters sts fs <|> matchFilters ts sfs
+matchFilters (t: sts) (f: sfs) = do
     vs1 <- matchFilter t f
-    vs2 <- matchFilter' sts sfs
+    vs2 <- matchFilters sts sfs
     return $ M.unionWith const vs1 vs2
 
 evaluateRule :: Context -> Rule -> Context
