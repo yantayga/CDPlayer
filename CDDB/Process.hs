@@ -5,7 +5,7 @@ module CDDB.Process where
 
 import Data.Map (fromList)
 import Data.Time
-import Data.Time.Calendar.OrdinalDate
+import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
 
 import CDDB.Types
 

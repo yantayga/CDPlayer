@@ -52,6 +52,7 @@ data Fact = Fact Name FieldConstants deriving (Eq, Show, Generic, ToJSON, FromJS
 type FieldConstants = [Constant]
 
 data Expression = Constant Constant
+    | TreePart SyntacticTree
     | Variable VariableName
     | UnOp UnOp Expression
     | BinOp BinOp Expression Expression

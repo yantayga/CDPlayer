@@ -1,12 +1,14 @@
-{-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
+{-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies, OverloadedStrings #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module CDDB.SyntacticTree where
 
 import GHC.Generics
 import GHC.Read
-import Data.Aeson (ToJSON, FromJSON)
+import Data.Aeson (ToJSON, toJSON, FromJSON, parseJSON, Value(..))
 import Data.List (intercalate)
+import Data.Text (unpack)
+import Text.Read (readMaybe)
 import Control.Applicative
 
 --import Text.Parsec hiding(choice, (<|>))
@@ -20,7 +22,13 @@ type TagId = String
 -- Tree like "S" ["NP" ["DET" [Word "the"], "N" [Word "cat"]], "VP" [Word "chase"], "NP" ["DET" [Word "a"], "N" [Word "mouse"]]]
 data SyntacticTree = Tag TagId [SyntacticTree]
     | Word TagId String
-    deriving (Eq, Generic, ToJSON, FromJSON)
+    deriving (Eq, Generic)
+
+instance ToJSON SyntacticTree where
+    toJSON t = toJSON $ show t
+
+instance FromJSON SyntacticTree where
+   parseJSON = tryParseJSON
 
 instance Show SyntacticTree where
     show :: SyntacticTree -> String
@@ -35,7 +43,13 @@ instance Read SyntacticTree where
 data FilterExpression = Asterisk
     | FilterTag TagId [FilterExpression]
     | FilterWord TagId String
-    deriving (Eq, Generic, ToJSON, FromJSON)
+    deriving (Eq, Generic)
+
+instance ToJSON FilterExpression where
+    toJSON t = toJSON $ show t
+
+instance FromJSON FilterExpression where
+   parseJSON = tryParseJSON
 
 instance Show FilterExpression where
     show :: FilterExpression -> String
@@ -50,6 +64,11 @@ instance Read FilterExpression where
                 L.Symbol "*" <- lexP
                 return Asterisk
     readListPrec = readListPrecDefault
+
+tryParseJSON (String s) = case (readMaybe $ unpack s) of
+    Nothing -> empty
+    Just t -> return t
+tryParseJSON _ = empty
 
 
 readTag c = do
