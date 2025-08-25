@@ -45,7 +45,7 @@ matchRule t r@(Rule _ _ filterExpr _ _ _) = (\(a, b) -> (a, (r, b))) $ matchFilt
 matchFilter :: SyntacticTree -> FilterExpression -> (Bool, VariableStates)
 matchFilter _ Asterisk = (True, emptyVariableStates)
 matchFilter (Tag id ts) (FilterTag fid fs) = if id == fid then matchFilter' ts fs else (False, emptyVariableStates) -- TODO: add variable id to defs!!!
-matchFilter (Word id s) (FilterWord fid fs) = (id = fid && s == fs, emptyVariableStates)
+matchFilter (Word id s) (FilterWord fid fs) = (id == fid && s == fs, emptyVariableStates)
 matchFilter _ _ = (False, emptyVariableStates)
 
 matchFilter' :: [SyntacticTree] -> [FilterExpression] -> (Bool, VariableStates)
