@@ -43,17 +43,17 @@ matchRule :: SyntacticTree -> Rule -> (Bool, (Rule, VariableStates))
 matchRule t r@(Rule _ _ filterExpr _ _ _) = (\(a, b) -> (a, (r, b))) $ matchFilter t filterExpr
 
 matchFilter :: SyntacticTree -> FilterExpression -> (Bool, VariableStates)
-matchFilter _ Asterix = (True, emptyVariableStates)
-matchFilter (Tag id ts) (FilterTag fid fs) = if id == fid then matchFilter' ts fs else (False, emptyVariableStates)
-matchFilter (Word s) (FilterWord fs) = (s == fs, emptyVariableStates)
+matchFilter _ Asterisk = (True, emptyVariableStates)
+matchFilter (Tag id ts) (FilterTag fid fs) = if id == fid then matchFilter' ts fs else (False, emptyVariableStates) -- TODO: add variable id to defs!!!
+matchFilter (Word id s) (FilterWord fid fs) = (id = fid && s == fs, emptyVariableStates)
 matchFilter _ _ = (False, emptyVariableStates)
 
 matchFilter' :: [SyntacticTree] -> [FilterExpression] -> (Bool, VariableStates)
 matchFilter' [] [] = (True, emptyVariableStates)
 matchFilter' _ [] = (False, emptyVariableStates)
-matchFilter' [] (Asterix: sfs) = matchFilter' [] sfs
+matchFilter' [] (Asterisk: sfs) = matchFilter' [] sfs
 matchFilter' [] _ = (False, emptyVariableStates)
-matchFilter' ts@(t: sts) fs@(Asterix: sfs) = if fst m1 then m1 else m2
+matchFilter' ts@(t: sts) fs@(Asterisk: sfs) = if fst m1 then m1 else m2
         where
                 m1 = matchFilter' sts fs
                 m2 = matchFilter' ts sfs

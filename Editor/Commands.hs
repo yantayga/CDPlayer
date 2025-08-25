@@ -5,7 +5,9 @@ module Editor.Commands (runMainCommand, initialProgramState, isNotSaved, setting
 
 import CDDB.Types
 import CDDB.Process
+import CDDB.Runner
 import Editor.Settings
+import Editor.Tests
 
 import Data.Time
 import qualified Data.Map as M
