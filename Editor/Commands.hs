@@ -17,18 +17,17 @@ import Data.Either.Extra (maybeToEither)
 import Data.Aeson (encode, decode, toJSON, fromJSON)
 import qualified Data.ByteString.Lazy as B
 import Text.Read
-
+import Control.Monad.Catch (catch, SomeException)
 import System.IO
 
 data ProgramState = ProgramState {
         settings :: Settings,
         cddb :: CDDB,
-        cddbFileName :: Maybe String,
         isNotSaved :: Bool,
-        treeToParse :: Maybe SyntacticTree,
         currentTemplate :: Maybe Name,
         currentRule :: Maybe Rule
     }
+    deriving (Show)
 
 type Arguments = [String]
 
@@ -55,9 +54,9 @@ commands = M.fromList [
 getCommands :: CommandMap
 getCommands = M.fromList [
         ("help", CommandDef (cmdHelp getCommands) "This help." Nothing),
-        ("tree", CommandDef (cmdGetField treeToParse) "Get current syntactic tree." Nothing),
-        ("cddb", CommandDef (runCommand getCDDBCommands) "Get database name." Nothing),
-        ("settings", CommandDef (runCommand getSettingsCommands) "Get database comment." Nothing)
+        ("tree", CommandDef (cmdGetField  $ makeGetter settings cddbTree) "Get current syntactic tree." Nothing),
+        ("cddb", CommandDef (runCommand getCDDBCommands) "Get database parameters." Nothing),
+        ("settings", CommandDef (runCommand getSettingsCommands) "Get settings." Nothing)
     ]
 
 setCommands :: CommandMap
@@ -74,6 +73,7 @@ getCDDBCommands = M.fromList [
         ("comment", CommandDef (cmdGetField $ makeGetter cddb comment) "Get database comment." Nothing),
         ("version", CommandDef (cmdGetField $ makeGetter cddb version) "Get database version." Nothing),
         ("date", CommandDef (cmdGetField $ makeGetter cddb date) "Get database date." Nothing),
+        ("filename", CommandDef (cmdGetField $ makeGetter settings cddbFileName) "Get database filename." Nothing),
         ("help", CommandDef (cmdHelp getCDDBCommands) "This help." Nothing)
     ]
 
@@ -101,7 +101,7 @@ setSettingsCommands = M.fromList [
     ]
 
 initialProgramState :: Settings -> ProgramState
-initialProgramState settings = ProgramState {settings = settings, cddb = emptyCDDB, cddbFileName = Nothing, isNotSaved = True, treeToParse = Nothing, currentTemplate = Nothing, currentRule = Nothing}
+initialProgramState settings = ProgramState {settings = settings, cddb = emptyCDDB, isNotSaved = True, currentTemplate = Nothing, currentRule = Nothing}
 
 runMainCommand :: Command
 runMainCommand = runCommand commands
@@ -121,7 +121,7 @@ cmdSetTree :: Command
 cmdSetTree args state = let tree = (readEither $ unwords args) in
         case tree of
                 Left err -> return $ Left err
-                Right a -> return $ Right $ state {treeToParse = Just a}
+                Right a -> return $ Right $ state {settings = (settings state) {cddbTree = Just a}}
 
 cmdGetField :: Show b => (ProgramState -> b) -> Command
 cmdGetField accessor [] state = return $ Left $ show $ accessor state
@@ -165,10 +165,6 @@ set_historyFile settings historyFile = settings {historyFile = historyFile}
 set_autoAddHistory :: Settings -> Bool -> Settings
 set_autoAddHistory settings autoAddHistory = settings {autoAddHistory = autoAddHistory}
 
---cmdGetSettingsField :: Show a => (Settings -> a) -> Command
---cmdGetSettingsField accessor [] state = return $ Left $ show $ accessor $ cddb state
---cmdGetSettingsField _ _ _ = return $ Left "Too many arguments"
-
 cmdQuit :: Command
 cmdQuit = undefined
 
@@ -181,7 +177,7 @@ cmdCreateEmptyCDDB :: Command
 cmdCreateEmptyCDDB args state = return $ Right $ initialProgramState $ settings state
 
 cmdCreateTestCDDB :: Command
-cmdCreateTestCDDB args state = return $ Right $ (initialProgramState $ settings state) {cddb = testCDDB}
+cmdCreateTestCDDB args state = return $ Right $ (initialProgramState $ (settings state) {cddbTree = Just testSTree2}) {cddb = testCDDB}
 
 cmdSaveCDDB :: Command
 cmdSaveCDDB args state = do
@@ -190,7 +186,7 @@ cmdSaveCDDB args state = do
         Left errMsg -> return $ Left errMsg
         Right fn -> let updatedCDDB = (cddb state) {date = today} in do
             B.writeFile fn $ encode (toJSON $ updatedCDDB)
-            return $ Right state {cddb = updatedCDDB, isNotSaved = False}
+            return $ Right $ updateStateWithDB state updatedCDDB fn
 
 cmdLoadCDDB :: Command
 cmdLoadCDDB args state = do
@@ -201,9 +197,12 @@ cmdLoadCDDB args state = do
             fileContent <- B.hGetContents handle
             case (decode :: B.ByteString -> Maybe CDDB) fileContent of
                 Nothing -> return $ Left "Error reading file "
-                Just s -> return $ Right state {isNotSaved = False}
+                Just cddb -> return $ Right $ updateStateWithDB state cddb fn
+
+updateStateWithDB :: ProgramState -> CDDB -> FilePath -> ProgramState
+updateStateWithDB state cddb fn = state {cddb = cddb, isNotSaved = False, settings = (settings state) {cddbFileName = Just fn}}
 
 extractFileName :: Arguments -> ProgramState -> Either String String
-extractFileName [] state = maybeToEither "File name is not specified" $ cddbFileName state
+extractFileName [] state = maybeToEither "File name is not specified" $ cddbFileName $ settings state
 extractFileName (s:[]) _ = Right s
 extractFileName _ _ = Left "Should be only one file name"

@@ -22,17 +22,14 @@ main = do
         startSettings <- readSettings
         let state = initialProgramState startSettings in do
             runInputTWithPrefs (haskelinePrefsFromSettings startSettings) (haskelineSettionsFromSettings startSettings) $ loop state
-            writeSettings $ settings state
     where
         loop state = do
             minput <- getInputLine "CDDB> "
             case minput of
                 Nothing -> return ()
                 Just "quit" -> do
-                    if isNotSaved state then do
-                        exiting <- agreedNotToSave
-                        if exiting then return() else loop state
-                    else return ()
+                        liftIO $ writeSettings $ settings state
+                        return ()
                 Just input -> (flip catch) exceptonHandler $ do
                     res <- liftIO $ runMainCommand (words input) state
                     case res of

@@ -11,7 +11,11 @@ import System.IO
 import qualified System.Console.Haskeline as HL
 import Control.Monad.Catch (catch, SomeException)
 
+import CDDB.SyntacticTree
+
 data Settings = Settings {
+        cddbFileName :: Maybe FilePath,
+        cddbTree :: Maybe SyntacticTree,
         historyFile :: String,
         autoAddHistory :: Bool
     } deriving (Eq, Show, Generic, ToJSON, FromJSON)
@@ -27,13 +31,15 @@ haskelineSettionsFromSettings settings = HL.defaultSettings {
 
 defalultSettings :: Settings
 defalultSettings = Settings {
+        cddbFileName = Nothing,
+        cddbTree = Nothing,
         historyFile = ".cddb_history",
         autoAddHistory = True
     }
 
 readSettings :: IO (Settings)
 readSettings = do
-    fileContent <- (flip catch) exceptonHandler $ B.readFile "editorSettings.json"
+    fileContent <- (flip catch) exceptonHandler $ B.readFile settingsFilename
     case (decode :: B.ByteString -> Maybe Settings) fileContent of
         Nothing -> return defalultSettings
         Just s -> return s
@@ -43,6 +49,8 @@ readSettings = do
 
 writeSettings :: Settings -> IO ()
 writeSettings settings = do
-    B.writeFile "editorSettings.json" $  encode (toJSON settings)
+    B.writeFile settingsFilename $  encode (toJSON settings)
 
+settingsFilename :: String
+settingsFilename = ".editor_state.json"
 

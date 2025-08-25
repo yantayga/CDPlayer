@@ -15,9 +15,9 @@ testFilter2 = FilterTag "S" [FilterTag "NP" [], FilterTag "VP" [FilterWord "V" "
 
 testCDDB :: CDDB
 testCDDB = CDDB {
-        name = "",
-        comment = "",
-        version = 1,
+        name = "Test CDDB",
+        comment = "Test CDDB, just for debug",
+        version = 1337,
         date = UTCTime (fromOrdinalDate 0 0) 0,
         templates = fromList [],
         rules = [
