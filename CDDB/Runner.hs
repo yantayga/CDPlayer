@@ -104,9 +104,13 @@ removeNode t (CTreePart n) = findAndRemoveNode n t
 removeNode t _ = t
 
 findAndRemoveNode :: TreePath -> SyntacticTree -> SyntacticTree
-findAndRemoveNode (n:[]) (Tag id ts) = Tag id $ (take n ts) ++ (drop (n + 1) ts)
-findAndRemoveNode (n:ns) (Tag id ts) = Tag id $ (take n ts) ++ findAndRemoveNode ns (ts !! n) : (drop (n + 1) ts)
-findAndRemoveNode n t = t
+findAndRemoveNode (n:[]) t@(Tag id ts) = if null bs then t else Tag id (as ++ tail bs)
+    where
+        (as, bs) = splitAt n ts
+findAndRemoveNode (n:ns) t@(Tag id ts) = if null bs then t else Tag id (as ++ findAndRemoveNode ns (head bs): tail bs)
+    where
+        (as, bs) = splitAt n ts
+findAndRemoveNode _ t = t
 
 addFact :: Context -> Primitive -> Context
 addFact ctx p = ctx {accumulatedKnowledge = evaluateFact (variableStates ctx) p: (accumulatedKnowledge ctx)}
