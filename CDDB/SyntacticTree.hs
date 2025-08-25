@@ -9,6 +9,7 @@ import Data.Aeson (ToJSON, toJSON, FromJSON, parseJSON, Value(..))
 import Data.List (intercalate)
 import Data.Text (unpack)
 import Text.Read (readMaybe)
+
 import Control.Applicative
 
 --import Text.Parsec hiding(choice, (<|>))
@@ -51,7 +52,6 @@ instance Read SyntacticTree where
                     )
     readListPrec = readListPrecDefault
 
--- Tree like S [*, NP, VP [VPP ["chase"]], *]
 data FilterExpression = Asterisk
     | FilterTag (Maybe VariableName) TagId [FilterExpression]
     | FilterWord (Maybe VariableName) TagId String

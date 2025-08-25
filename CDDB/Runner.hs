@@ -9,8 +9,7 @@ import GHC.Generics
 import Data.Aeson hiding (Null)
 import qualified Data.Map as M
 import Data.Maybe
-import Data.List ((!!))
-import Data.Either.Extra
+
 import Control.Monad
 import Control.Applicative
 
@@ -82,11 +81,11 @@ matchFilters (t: sts) pos (f: sfs) path = do
 evaluateRule :: Context -> Rule -> Context
 evaluateRule ctx rule@(Rule _ ruleScore _ locals conditions actions) =
     if applicable
-        then doActions (ctx {variableStates = states', accumulatedScore = accumulatedScore ctx * ruleScore}) actions
+        then doActions (ctx {variableStates = states, accumulatedScore = accumulatedScore ctx * ruleScore}) actions
         else ctx
     where
-        states' = addLocals (variableStates ctx) locals
-        applicable = checkConditions states' conditions
+        states   = addLocals (variableStates ctx) locals
+        applicable = checkConditions states conditions
 
 doActions :: Context -> Actions -> Context
 doActions ctx actions = foldl doAction ctx actions
@@ -107,7 +106,7 @@ findAndRemoveNode :: TreePath -> SyntacticTree -> SyntacticTree
 findAndRemoveNode (n:[]) t@(Tag id ts) = if null bs then t else Tag id (as ++ tail bs)
     where
         (as, bs) = splitAt n ts
-findAndRemoveNode (n:ns) t@(Tag id ts) = if null bs then t else Tag id (as ++ findAndRemoveNode ns (head bs): tail bs)
+findAndRemoveNode (n: ns) t@(Tag id ts) = if null bs then t else Tag id (as ++ findAndRemoveNode ns (head bs): tail bs)
     where
         (as, bs) = splitAt n ts
 findAndRemoveNode _ t = t
@@ -119,9 +118,7 @@ addLocals :: VariableStates -> Locals -> VariableStates
 addLocals states ls = foldl addVariableDef states ls
 
 addVariableDef :: VariableStates -> VariableDef -> VariableStates
-addVariableDef states (VariableDef name expr) = M.insert name value states
-    where
-        value = evaluateExpression states expr
+addVariableDef states (VariableDef name expr) = M.insert name (evaluateExpression states expr) states
 
 checkConditions :: VariableStates -> Conditions -> Bool
 checkConditions states exprs = all (== (CBoolean True)) $ map (evaluateExpression states) exprs

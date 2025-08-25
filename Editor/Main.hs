@@ -12,6 +12,7 @@ import System.IO
 import Editor.Settings
 import Editor.Commands
 
+-- TODO: Use agreedNotToSave
 agreedNotToSave :: InputT IO (Bool)
 agreedNotToSave = do
     answer <- getInputChar "CDDB is not saved. Dou you really want to quit (y/N)?"

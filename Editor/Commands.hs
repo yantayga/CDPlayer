@@ -3,13 +3,6 @@
 
 module Editor.Commands (runMainCommand, initialProgramState, isNotSaved, settings)  where
 
-import CDDB.Types
-import CDDB.Process
-import CDDB.Runner
-import CDDB.SyntacticTree
-import Editor.Settings
-import Editor.Tests
-
 import Data.Time
 import qualified Data.Map as M
 import Data.List (intercalate, isInfixOf)
@@ -17,8 +10,16 @@ import Data.Either.Extra (maybeToEither)
 import Data.Aeson (encode, decode, toJSON, fromJSON)
 import qualified Data.ByteString.Lazy as B
 import Text.Read
+
 import Control.Monad.Catch (catch, SomeException)
 import System.IO
+
+import CDDB.Types
+import CDDB.Process
+import CDDB.Runner
+import CDDB.SyntacticTree
+import Editor.Settings
+import Editor.Tests
 
 data ProgramState = ProgramState {
         settings :: Settings,

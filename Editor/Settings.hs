@@ -9,6 +9,7 @@ import qualified Data.ByteString.Lazy as B
 
 import System.IO
 import qualified System.Console.Haskeline as HL
+
 import Control.Monad.Catch (catch, SomeException)
 
 import CDDB.SyntacticTree
