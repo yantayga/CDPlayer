@@ -11,73 +11,87 @@ import qualified Data.Map as M
 import Data.Maybe
 import Data.Either.Extra
 import Control.Monad
+import Control.Applicative
 
 import CDDB.Types
 import CDDB.Expressions
 import CDDB.SyntacticTree
 
+data ContextState = Finished | NonFinished deriving (Eq, Ord)
+
 data Context = Context {
         variableStates :: VariableStates,
         currentTree :: SyntacticTree,
         accumulatedScore :: Score,
-        accumulatedKnowledge :: Knowledge
+        accumulatedKnowledge :: Knowledge,
+        state :: ContextState
     }
 
-applyTree :: SyntacticTree -> CDDB -> [Either Context Context]
-applyTree t db = map (\(r, vs) -> (evaluateRule (newContext t vs) r)) rules
-    where
-        rules = matchRules t db
+applyTree :: CDDB -> SyntacticTree -> [Context]
+applyTree db t = filter ((== Finished) . state) $ applyTreeWithContext db $ emptyContext t
 
-newContext :: SyntacticTree -> VariableStates -> Context
-newContext t vs = Context {
-        variableStates = vs,
+applyTreeWithContext :: CDDB -> Context -> [Context]
+applyTreeWithContext db ctx = finished ++ concatMap subApply nonfinished
+    where
+        (finished, nonfinished) = span ((== Finished) . state) $ applyTreeOnce db ctx
+        subApply ctx = applyTreeWithContext db $ resetContext ctx
+
+applyTreeOnce :: CDDB -> Context-> [Context]
+applyTreeOnce db ctx = map evaluateRuleAt $ matchRules (currentTree ctx) db
+    where
+        evaluateRuleAt (r, vs) = evaluateRule ctx {variableStates = vs} r
+
+resetContext :: Context -> Context
+resetContext ctx = ctx {variableStates = emptyVariableStates, state = NonFinished}
+
+emptyContext :: SyntacticTree -> Context
+emptyContext t = Context {
+        variableStates = emptyVariableStates,
         currentTree = t,
         accumulatedScore = 1.0,
-        accumulatedKnowledge = []
+        accumulatedKnowledge = [],
+        state = NonFinished
     }
 
 matchRules :: SyntacticTree -> CDDB -> [(Rule, VariableStates)]
-matchRules t cddb = map snd $ filter fst $ map (matchRule t) $ rules cddb
+matchRules t cddb = catMaybes $ map (matchRule t) $ rules cddb
 
-matchRule :: SyntacticTree -> Rule -> (Bool, (Rule, VariableStates))
-matchRule t r@(Rule _ _ filterExpr _ _ _) = (\(a, b) -> (a, (r, b))) $ matchFilter t filterExpr
+matchRule :: SyntacticTree -> Rule -> Maybe (Rule, VariableStates)
+matchRule t r@(Rule _ _ filterExpr _ _ _) = (r,) <$> matchFilter t filterExpr
 
-matchFilter :: SyntacticTree -> FilterExpression -> (Bool, VariableStates)
-matchFilter _ Asterisk = (True, emptyVariableStates)
-matchFilter (Tag id ts) (FilterTag fid fs) = if id == fid then matchFilter' ts fs else (False, emptyVariableStates) -- TODO: add variable id to defs!!!
-matchFilter (Word id s) (FilterWord fid fs) = (id == fid && s == fs, emptyVariableStates)
-matchFilter _ _ = (False, emptyVariableStates)
+matchFilter :: SyntacticTree -> FilterExpression -> Maybe VariableStates
+matchFilter _ Asterisk = Just emptyVariableStates
+matchFilter (Tag id ts) (FilterTag fid fs) = guard (id == fid) >> (matchFilter' ts fs)
+matchFilter (Word id s) (FilterWord fid fs) = guard (id == fid && s == fs) >> Just emptyVariableStates
+matchFilter _ _ = Nothing
 
-matchFilter' :: [SyntacticTree] -> [FilterExpression] -> (Bool, VariableStates)
-matchFilter' [] [] = (True, emptyVariableStates)
-matchFilter' _ [] = (False, emptyVariableStates)
+matchFilter' :: [SyntacticTree] -> [FilterExpression] -> Maybe VariableStates
+matchFilter' [] [] = Just emptyVariableStates
+matchFilter' _ [] = Nothing
 matchFilter' [] (Asterisk: sfs) = matchFilter' [] sfs
-matchFilter' [] _ = (False, emptyVariableStates)
-matchFilter' ts@(t: sts) fs@(Asterisk: sfs) = if fst m1 then m1 else m2
-        where
-                m1 = matchFilter' sts fs
-                m2 = matchFilter' ts sfs
-matchFilter' (t: sts) (f: sfs) = if r1 && r2 then (True, M.unionWith const vs1 vs2) else (False, emptyVariableStates)
-        where
-                (r1, vs1) = matchFilter t f
-                (r2, vs2) = matchFilter' sts sfs
+matchFilter' [] _ = Nothing
+matchFilter' ts@(t: sts) fs@(Asterisk: sfs) = matchFilter' sts fs <|> matchFilter' ts sfs
+matchFilter' (t: sts) (f: sfs) = do
+    vs1 <- matchFilter t f
+    vs2 <- matchFilter' sts sfs
+    return $ M.unionWith const vs1 vs2
 
-evaluateRule :: Context -> Rule -> Either Context Context
+evaluateRule :: Context -> Rule -> Context
 evaluateRule ctx rule@(Rule _ ruleScore _ locals conditions actions) =
     if applicable
         then doActions (ctx {variableStates = states', accumulatedScore = accumulatedScore ctx * ruleScore}) actions
-        else Right ctx
+        else ctx
     where
         states' = addLocals (variableStates ctx) locals
         applicable = checkConditions states' conditions
 
-doActions :: Context -> Actions -> Either Context Context
-doActions ctx actions = foldM doAction ctx actions
+doActions :: Context -> Actions -> Context
+doActions ctx actions = foldl doAction ctx actions
 
-doAction :: Context -> Action -> Either Context Context
-doAction ctx Stop = Left ctx
-doAction ctx (AddFact p) = Right $ addFact ctx p
-doAction ctx (Delete as) = Right $ removeNodes ctx as
+doAction :: Context -> Action -> Context
+doAction ctx Stop = ctx {state = Finished}
+doAction ctx (AddFact p) = addFact ctx p
+doAction ctx (Delete as) = removeNodes ctx as
 
 removeNodes :: Context -> [VariableName] -> Context
 removeNodes = undefined
