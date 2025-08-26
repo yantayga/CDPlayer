@@ -1,1 +1,0 @@
-{"comment":"Test CDDB, just for debug","date":"2025-08-26T10:41:11.821083274Z","kn":[],"name":"Test CDDB","rules":{"550e8400-e29b-41d4-a716-446655440000":["Test rule",0.1,"S[*, np:NP[*], vp:VP[ *], *]",[],[],[{"tag":"Stop"}]]},"templates":{"PROPERTY_SET":["object","property","value"]},"version":1337}
