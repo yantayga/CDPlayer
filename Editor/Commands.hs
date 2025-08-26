@@ -11,8 +11,10 @@ import Data.Aeson (encode, decode, toJSON)
 import qualified Data.ByteString.Lazy as B
 import Text.Read
 import Data.UUID (fromString)
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe, fromJust)
+import Data.UUID.V1
 
+import Control.Monad (replicateM)
 import System.IO
 
 import CDDB.Types
@@ -28,8 +30,7 @@ data ProgramState = ProgramState {
         cddb :: CDDB,
         currentRules :: [(RuleId, Rule)],
         isNotSaved :: Bool,
-        currentTemplate :: Maybe Name,
-        currentRule :: Maybe Rule
+        currentTemplate :: Maybe Name
     }
     deriving (Show)
 
@@ -45,21 +46,26 @@ type CommandMap = M.Map String CommandDef
 
 commands :: CommandMap
 commands = M.fromList [
-        ("new",  CommandDef cmdCreateEmptyCDDB "Create new database."),
-        ("save", CommandDef cmdSaveCDDB "Save database with optional file name."),
-        ("load", CommandDef cmdLoadCDDB "Load database with optional file name."),
-        ("help", CommandDef (cmdHelp commands) "This help."),
-        ("get",  CommandDef (runCommand getCommands) "Get objects field."),
-        ("set",  CommandDef (runCommand setCommands) "Set objects field."),
-        ("rule", CommandDef (runCommand ruleCommands) ""),
-        ("run",  CommandDef cmdRun "Run for syntactic tree."),
-        ("dump", CommandDef cmdDumpCDDB "Dump database."),
-        ("quit", CommandDef cmdQuit "Quit program.")
+        ("new",   CommandDef cmdCreateEmptyCDDB "Create new database."),
+        ("save",  CommandDef cmdSaveCDDB "Save database with optional file name."),
+        ("load",  CommandDef cmdLoadCDDB "Load database with optional file name."),
+        ("help",  CommandDef (cmdHelp commands) "This help."),
+        ("get",   CommandDef (runCommand getCommands) "Get objects field."),
+        ("set",   CommandDef (runCommand setCommands) "Set objects field."),
+        ("rules", CommandDef (runCommand ruleCommands) "manimulate rules"),
+        ("run",   CommandDef cmdRun "Run for syntactic tree."),
+        ("dump",  CommandDef cmdDumpCDDB "Dump database."),
+        ("quit",  CommandDef cmdQuit "Quit program.")
     ]
 
 ruleCommands :: CommandMap
 ruleCommands = M.fromList [
         ("help",   CommandDef (cmdHelp ruleCommands) "This help."),
+        ("show",   CommandDef cmdShowRules "Show current rules."),
+        ("new",    CommandDef cmdNewRule "Set current rules to a new one."),
+        ("add",    CommandDef cmdAddRule "Add rule to current rules."),
+        ("write",  CommandDef cmdWriteRules "Add/update current rules to cddb."),
+        ("renew",  CommandDef cmdRenewRules "Regenerate rules ids."),
         ("find",   CommandDef cmdFindRules "Filter rules by ids."),
         ("filter", CommandDef cmdFilterRules "Filter rules by syntactic tree.")
     ]
@@ -116,7 +122,7 @@ setSettingsCommands = M.fromList [
     ]
 
 initialProgramState :: Settings -> ProgramState
-initialProgramState settings = ProgramState {settings = settings, cddb = emptyCDDB, currentRules = [], isNotSaved = True, currentTemplate = Nothing, currentRule = Nothing}
+initialProgramState settings = ProgramState {settings = settings, cddb = emptyCDDB, currentRules = [], isNotSaved = True, currentTemplate = Nothing}
 
 runMainCommand :: Command
 runMainCommand = runCommand commands
@@ -156,7 +162,37 @@ cmdDumpCDDB :: Command
 cmdDumpCDDB [] state = do
     print (cddb state)
     return $ Right state
-cmdDumpCDDB _ _ = return $ Left "Too many arguments"
+cmdDumpCDDB _ _ = errTooManyArguments
+
+cmdShowRules :: Command
+cmdShowRules [] state = do
+    mapM_ (putStrLn . ruleDesc) (currentRules state)
+    return $ Right state
+cmdShowRules _ _ = errTooManyArguments
+
+cmdNewRule :: Command
+cmdNewRule [] state = do
+    Just newUUID <- nextUUID
+    return $ Right state {currentRules = [(newUUID, newRule)]}
+cmdNewRule _ _ = errTooManyArguments
+
+cmdAddRule :: Command
+cmdAddRule [] state = do
+    Just newUUID <- nextUUID
+    return $ Right state {currentRules = (newUUID, newRule) : currentRules state}
+cmdAddRule _ _ = errTooManyArguments
+
+cmdWriteRules :: Command
+cmdWriteRules [] state = return $ Right state {cddb = addRulesToCDDB (cddb state) (currentRules state)}
+cmdWriteRules _ _ = errTooManyArguments
+
+cmdRenewRules :: Command
+cmdRenewRules [] state = do
+    uuids <- replicateM (length crs) nextUUID
+    return $ Right state {currentRules = zip (map fromJust uuids) crs}
+    where
+        crs = map snd $ currentRules state
+cmdRenewRules _ _ = errTooManyArguments
 
 cmdFilterRules :: Command
 cmdFilterRules args state = printAndUpdateCurrentRules (boundRuleDesc tree) (mapSnd fst) rulesFound state
@@ -185,14 +221,14 @@ cmdSetTree args state = let tree = (readEither $ unwords args) in
 
 cmdGetField :: Show b => (ProgramState -> b) -> Command
 cmdGetField accessor [] state = return $ Left $ show $ accessor state
-cmdGetField _ _ _ = return $ Left "Too many arguments"
+cmdGetField _ _ _ = errTooManyArguments
 
 cmdSetField :: Read b => (ProgramState -> b -> ProgramState) -> Command
 cmdSetField setter [val] state = let v = readEither val in
         case v of
                 Left err -> return $ Left err
                 Right a -> return $ Right $ setter state a
-cmdSetField _ [] _ = return $ Left "Not enough arguments"
+cmdSetField _ [] _ = errTooManyArguments
 cmdSetField _ _ _ = return $ Left "Too many arguments"
 
 makeGetter :: (a -> b) -> (b -> c) -> (a -> c)
@@ -238,7 +274,7 @@ cmdHelp cmds args _ = return $ Left $ M.foldrWithKey (addCommandHelp args) "Comm
 
 cmdCreateEmptyCDDB :: Command
 cmdCreateEmptyCDDB [] state = return $ Right $ initialProgramState $ settings state
-cmdCreateEmptyCDDB _ _ = return $ Left "Too many arguments."
+cmdCreateEmptyCDDB _ _ = errTooManyArguments
 
 cmdSaveCDDB :: Command
 cmdSaveCDDB args state = do
@@ -267,3 +303,6 @@ extractFileName :: Arguments -> ProgramState -> Either String String
 extractFileName [] state = maybeToEither "File name is not specified" $ cddbFileName $ settings state
 extractFileName [s] _ = Right s
 extractFileName _ _ = Left "Should be only one file name"
+
+errTooManyArguments :: IO (Either String ProgramState)
+errTooManyArguments = return $ Left "Too many arguments."

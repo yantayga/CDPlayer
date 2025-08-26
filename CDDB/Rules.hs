@@ -19,6 +19,14 @@ data Rule = Rule Comment Score FilterExpression Locals Conditions Actions derivi
 type Score = Double
 type RuleId = UUID
 
+newRule :: Rule
+newRule = Rule "" 1.0 (Asterisk Nothing) [] [] []
+
+addRules :: Rules -> [(RuleId, Rule)] -> Rules
+addRules = foldl insertRule
+    where
+        insertRule rs (ruleId, rule) = M.insertWith const ruleId rule rs
+
 findRuleById :: Rules -> RuleId -> Maybe (RuleId, Rule)
 findRuleById rules ruleId = (ruleId,) <$> M.lookup ruleId rules
 

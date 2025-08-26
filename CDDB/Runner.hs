@@ -27,7 +27,7 @@ data Context = Context {
     }
 
 applyTree :: CDDB -> SyntacticTree -> RecursionDepth -> [Context]
-applyTree db t mrd = applyTreeWithContext db (emptyContext t) mrd
+applyTree db t = applyTreeWithContext db (emptyContext t)
 
 applyTreeWithContext :: CDDB -> Context -> RecursionDepth -> [Context]
 applyTreeWithContext db ctx mrd = finished ++ deep ++ concatMap subApply shallow

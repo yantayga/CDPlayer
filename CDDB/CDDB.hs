@@ -37,3 +37,6 @@ emptyCDDB = CDDB {
 
 findCDDBRuleById :: CDDB -> UUID -> Maybe (RuleId, Rule)
 findCDDBRuleById cddb = findRuleById (rules cddb)
+
+addRulesToCDDB :: CDDB -> [(RuleId, Rule)] -> CDDB
+addRulesToCDDB cddb newRules = cddb {rules = addRules (rules cddb) newRules}
