@@ -7,6 +7,7 @@ import qualified Data.Map as M
 import Data.Maybe (mapMaybe, fromJust)
 import Data.UUID (fromString)
 import Data.UUID.V1 (nextUUID)
+import Text.Read
 
 import Control.Monad (replicateM)
 
@@ -19,8 +20,12 @@ import Editor.Command.Common
 
 cmdShowRules :: Command
 cmdShowRules [] state = do
-    mapM_ (putStrLn . ruleDesc) (currentRules state)
+    mapM_ printFn $ zip [0..] (currentRules state)
     return $ Right state
+    where
+        printFn (idx, r) = do
+            print idx
+            putStrLn $ ruleDesc r
 cmdShowRules _ _ = errTooManyArguments
 
 cmdNewRule :: Command
@@ -53,6 +58,18 @@ cmdWriteRules :: Command
 cmdWriteRules [] state = return $ Right state {cddb = addRulesToCDDB (cddb state) (currentRules state)}
 cmdWriteRules _ _ = errTooManyArguments
 
+cmdWriteRule :: Command
+cmdWriteRule (arg:[]) state = let v = readEither arg in
+    case v of
+        Left err -> return $ Left err
+        Right ruleN -> if ruleN < 0 || ruleN >= (length crs)
+            then return $ Left "Index out of range"
+            else return $ Right state {cddb = addRulesToCDDB (cddb state) [crs !! ruleN]}
+    where
+        crs = currentRules state
+cmdWriteRule [] _ = return $ Left "Not enough arguments"
+cmdWriteRule _ _ = errTooManyArguments
+
 cmdRenewRules :: Command
 cmdRenewRules [] state = do
     uuids <- replicateM (length crs) nextUUID
@@ -60,6 +77,20 @@ cmdRenewRules [] state = do
     where
         crs = map snd $ currentRules state
 cmdRenewRules _ _ = errTooManyArguments
+
+cmdRenewRule :: Command
+cmdRenewRule (arg:[]) state = let v = readEither arg in
+    case v of
+        Left err -> return $ Left err
+        Right ruleN -> if ruleN < 0 || ruleN >= length (currentRules state)
+            then return $ Left "Index out of range"
+            else do
+                Just uuid <- nextUUID
+                return $ Right state {currentRules = crsB ++ [(uuid, snd $ head crsA)] ++ drop 1 crsA}
+            where
+                (crsB, crsA) = splitAt ruleN $ currentRules state
+cmdRenewRule [] _ = return $ Left "Not enough arguments"
+cmdRenewRule _ _ = errTooManyArguments
 
 cmdFilterRules :: Command
 cmdFilterRules args state = printAndUpdateCurrentRules (boundRuleDesc tree) (mapSnd fst) rulesFound state

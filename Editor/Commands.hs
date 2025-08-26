@@ -18,13 +18,14 @@ import Editor.Command.Runner
 
 commands :: CommandMap
 commands = M.fromList [
+        ("help",  CommandDef (cmdHelp commands) "This help."),
         ("new",   CommandDef cmdCreateEmptyCDDB "Create new database."),
         ("save",  CommandDef cmdSaveCDDB "Save database with optional file name."),
         ("load",  CommandDef cmdLoadCDDB "Load database with optional file name."),
-        ("help",  CommandDef (cmdHelp commands) "This help."),
         ("get",   CommandDef (runCommand getCommands) "Get objects field."),
         ("set",   CommandDef (runCommand setCommands) "Set objects field."),
-        ("rules", CommandDef (runCommand ruleCommands) "manimulate rules"),
+        ("rule",  CommandDef (runCommand ruleCommands) "Manimulate one rule, my index"),
+        ("rules", CommandDef (runCommand rulesCommands) "Manimulate rules"),
         ("run",   CommandDef cmdRun "Run for syntactic tree."),
         ("dump",  CommandDef cmdDumpCDDB "Dump database."),
         ("quit",  CommandDef cmdQuit "Quit program.")
@@ -33,16 +34,23 @@ commands = M.fromList [
 ruleCommands :: CommandMap
 ruleCommands = M.fromList [
         ("help",    CommandDef (cmdHelp ruleCommands) "This help."),
+        ("write",   CommandDef cmdWriteRule "Add/update rule to cddb."),
+        ("renew",   CommandDef cmdRenewRule "Regenerate rule ids."),
+        ("delete",  CommandDef cmdDeleteRule "Delete rule from the current rules"),
+        ("wipe",    CommandDef cmdWipeRule "Delete rule with id from CDDB.")
+    ]
+
+rulesCommands :: CommandMap
+rulesCommands = M.fromList [
+        ("help",    CommandDef (cmdHelp rulesCommands) "This help."),
         ("show",    CommandDef cmdShowRules "Show current rules."),
         ("clear",   CommandDef cmdClearRules "Clear current rules."),
-        ("new",     CommandDef cmdNewRule "Set current rules to a new one."),
+        ("new",     CommandDef cmdNewRule "Reset current rules to a new one."),
         ("add",     CommandDef cmdAddRule "Add rule to current rules."),
         ("write",   CommandDef cmdWriteRules "Add/update current rules to cddb."),
         ("renew",   CommandDef cmdRenewRules "Regenerate rules ids."),
-        ("delete",  CommandDef cmdDeleteRule "Delete rule from the current rules"),
-        ("wipe",    CommandDef cmdWipeRule "Delete rule with id from CDDB."),
-        ("find",    CommandDef cmdFindRules "Filter rules by ids."),
-        ("filter",  CommandDef cmdFilterRules "Filter rules by syntactic tree.")
+        ("find",    CommandDef cmdFindRules "Find rules by ids."),
+        ("filter",  CommandDef cmdFilterRules "Find rules by syntactic tree.")
     ]
 
 getCommands :: CommandMap
@@ -63,38 +71,39 @@ setCommands = M.fromList [
 
 getCDDBCommands :: CommandMap
 getCDDBCommands = M.fromList [
+        ("help",     CommandDef (cmdHelp getCDDBCommands) "This help."),
         ("name",     CommandDef (cmdGetField $ makeGetter cddb name) "Get database name."),
         ("comment",  CommandDef (cmdGetField $ makeGetter cddb comment) "Get database comment."),
         ("version",  CommandDef (cmdGetField $ makeGetter cddb version) "Get database version."),
         ("date",     CommandDef (cmdGetField $ makeGetter cddb date) "Get database date."),
-        ("filename", CommandDef (cmdGetField $ makeGetter settings cddbFileName) "Get database filename."),
-        ("help",     CommandDef (cmdHelp getCDDBCommands) "This help.")
+        ("filename", CommandDef (cmdGetField $ makeGetter settings cddbFileName) "Get database filename.")
     ]
 
 setCDDBCommands :: CommandMap
 setCDDBCommands = M.fromList [
+        ("help",    CommandDef (cmdHelp setCDDBCommands) "This help."),
         ("name",    CommandDef (cmdSetField $ makeSetter setCDDB setName cddb) "Set database name."),
         ("comment", CommandDef (cmdSetField $ makeSetter setCDDB setComment cddb) "Set database comment."),
         ("version", CommandDef (cmdSetField $ makeSetter setCDDB setVersion cddb) "Set database version."),
-        ("date",    CommandDef (cmdSetField $ makeSetter setCDDB setDate cddb) "Set database date."),
-        ("help",    CommandDef (cmdHelp setCDDBCommands) "This help.")
+        ("date",    CommandDef (cmdSetField $ makeSetter setCDDB setDate cddb) "Set database date.")
     ]
 
 getSettingsCommands :: CommandMap
 getSettingsCommands = M.fromList [
+        ("help",              CommandDef (cmdHelp getSettingsCommands) "This help."),
         ("historyFile",       CommandDef (cmdGetField $ makeGetter settings historyFile) "Get histroy file."),
         ("autoAddHistory",    CommandDef (cmdGetField $ makeGetter settings autoAddHistory) "Get enable/disable add command to history."),
-        ("maxRecursionDepth", CommandDef (cmdGetField $ makeGetter settings maxRecursionDepth) "Get maximum recursion depth."),
-        ("help",              CommandDef (cmdHelp getSettingsCommands) "This help.")
+        ("maxRecursionDepth", CommandDef (cmdGetField $ makeGetter settings maxRecursionDepth) "Get maximum recursion depth.")
     ]
 
 setSettingsCommands :: CommandMap
 setSettingsCommands = M.fromList [
+        ("help",              CommandDef (cmdHelp setSettingsCommands) "This help."),
         ("historyFile",       CommandDef (cmdSetField $ makeSetter setSettings setHistoryFile settings) "Set histroy file."),
         ("autoAddHistory",    CommandDef (cmdSetField $ makeSetter setSettings setAutoAddHistory settings) "Enable/disable add command to history."),
-        ("maxRecursionDepth", CommandDef (cmdSetField $ makeSetter setSettings setMaxRecursionDepth settings) "Set maximum recursion depth."),
-        ("help",              CommandDef (cmdHelp setSettingsCommands) "This help.")
+        ("maxRecursionDepth", CommandDef (cmdSetField $ makeSetter setSettings setMaxRecursionDepth settings) "Set maximum recursion depth.")
     ]
+
 runMainCommand :: Command
 runMainCommand = runCommand commands
 
