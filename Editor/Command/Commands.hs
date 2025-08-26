@@ -192,12 +192,12 @@ cmdAddRule _ _ = errTooManyArguments
 cmdDeleteRule :: Command
 cmdDeleteRule args state = return $ Right state {currentRules = filter isIdInIds $ currentRules state}
     where
-        isIdInIds (ruleId, _) = elem ruleId $ catMaybes $ map fromString args
+        isIdInIds (ruleId, _) = elem ruleId $ mapMaybe fromString args
 
 cmdWipeRule :: Command
 cmdWipeRule args state = return $ Right state {cddb = deleteRulesToCDDB (cddb state) ids}
     where
-        ids = catMaybes $ map fromString args
+        ids = mapMaybe fromString args
 
 cmdWriteRules :: Command
 cmdWriteRules [] state = return $ Right state {cddb = addRulesToCDDB (cddb state) (currentRules state)}
