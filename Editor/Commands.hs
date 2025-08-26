@@ -41,76 +41,76 @@ type Command = Arguments -> ProgramState -> IO (Either String ProgramState)
 
 type HelpString = String
 
-data CommandDef = CommandDef Command HelpString (Maybe CommandMap)
+data CommandDef = CommandDef Command HelpString
 
 type CommandMap = M.Map String CommandDef
 
 commands :: CommandMap
 commands = M.fromList [
-        ("new",  CommandDef cmdCreateEmptyCDDB "Create new database." Nothing),
-        ("save", CommandDef cmdSaveCDDB "Save database with optional file name." Nothing),
-        ("load", CommandDef cmdLoadCDDB "Load database with optional file name." Nothing),
-        ("help", CommandDef (cmdHelp commands) "This help." Nothing),
-        ("get", CommandDef (runCommand getCommands) "Get objects field." Nothing),
-        ("set", CommandDef (runCommand setCommands) "Set objects field." Nothing),
-        ("rule", CommandDef (runCommand ruleCommands) "" Nothing),
-        ("quit", CommandDef cmdQuit "Quit program." Nothing)
+        ("new",  CommandDef cmdCreateEmptyCDDB "Create new database."),
+        ("save", CommandDef cmdSaveCDDB "Save database with optional file name."),
+        ("load", CommandDef cmdLoadCDDB "Load database with optional file name."),
+        ("help", CommandDef (cmdHelp commands) "This help."),
+        ("get", CommandDef (runCommand getCommands) "Get objects field."),
+        ("set", CommandDef (runCommand setCommands) "Set objects field."),
+        ("rule", CommandDef (runCommand ruleCommands) ""),
+        ("quit", CommandDef cmdQuit "Quit program.")
     ]
 
 ruleCommands :: CommandMap
 ruleCommands = M.fromList [
-        ("help", CommandDef (cmdHelp ruleCommands) "This help." Nothing),
-        ("find", CommandDef cmdFindRules "Filter rules by ids." Nothing),
-        ("filter", CommandDef cmdFilterRules "Filter rules by syntactic tree." Nothing)
+        ("help", CommandDef (cmdHelp ruleCommands) "This help."),
+        ("find", CommandDef cmdFindRules "Filter rules by ids."),
+        ("filter", CommandDef cmdFilterRules "Filter rules by syntactic tree.")
     ]
 
 getCommands :: CommandMap
 getCommands = M.fromList [
-        ("help", CommandDef (cmdHelp getCommands) "This help." Nothing),
-        ("tree", CommandDef (cmdGetField  $ makeGetter settings cddbTree) "Get current syntactic tree." Nothing),
-        ("cddb", CommandDef (runCommand getCDDBCommands) "Get database parameters." Nothing),
-        ("settings", CommandDef (runCommand getSettingsCommands) "Get settings." Nothing)
+        ("help", CommandDef (cmdHelp getCommands) "This help."),
+        ("tree", CommandDef (cmdGetField  $ makeGetter settings cddbTree) "Get current syntactic tree."),
+        ("cddb", CommandDef (runCommand getCDDBCommands) "Get database parameters."),
+        ("settings", CommandDef (runCommand getSettingsCommands) "Get settings.")
     ]
 
 setCommands :: CommandMap
 setCommands = M.fromList [
-        ("help", CommandDef (cmdHelp setCommands) "This help." Nothing),
-        ("tree", CommandDef cmdSetTree "Set current syntactic tree." Nothing),
-        ("cddb", CommandDef (runCommand setCDDBCommands) "Set database fields." Nothing),
-        ("settings", CommandDef (runCommand setSettingsCommands) "Set settings fields." Nothing)
+        ("help", CommandDef (cmdHelp setCommands) "This help."),
+        ("tree", CommandDef cmdSetTree "Set current syntactic tree."),
+        ("cddb", CommandDef (runCommand setCDDBCommands) "Set database fields."),
+        ("settings", CommandDef (runCommand setSettingsCommands) "Set settings fields.")
     ]
 
 getCDDBCommands :: CommandMap
 getCDDBCommands = M.fromList [
-        ("name", CommandDef (cmdGetField $ makeGetter cddb name) "Get database name." Nothing),
-        ("comment", CommandDef (cmdGetField $ makeGetter cddb comment) "Get database comment." Nothing),
-        ("version", CommandDef (cmdGetField $ makeGetter cddb version) "Get database version." Nothing),
-        ("date", CommandDef (cmdGetField $ makeGetter cddb date) "Get database date." Nothing),
-        ("filename", CommandDef (cmdGetField $ makeGetter settings cddbFileName) "Get database filename." Nothing),
-        ("help", CommandDef (cmdHelp getCDDBCommands) "This help." Nothing)
+        ("name", CommandDef (cmdGetField $ makeGetter cddb name) "Get database name."),
+        ("comment", CommandDef (cmdGetField $ makeGetter cddb comment) "Get database comment."),
+        ("version", CommandDef (cmdGetField $ makeGetter cddb version) "Get database version."),
+        ("date", CommandDef (cmdGetField $ makeGetter cddb date) "Get database date."),
+        ("filename", CommandDef (cmdGetField $ makeGetter settings cddbFileName) "Get database filename."),
+        ("help", CommandDef (cmdHelp getCDDBCommands) "This help.")
     ]
 
 setCDDBCommands :: CommandMap
 setCDDBCommands = M.fromList [
-        ("name", CommandDef (cmdSetField $ makeSetter setCDDB setName cddb) "Set database name." Nothing),
-        ("comment", CommandDef (cmdSetField $ makeSetter setCDDB setComment cddb) "Set database comment." Nothing),
-        ("version", CommandDef (cmdSetField $ makeSetter setCDDB setVersion cddb) "Set database version." Nothing),
-        ("date", CommandDef (cmdSetField $ makeSetter setCDDB setDate cddb) "Set database date." Nothing),
-        ("help", CommandDef (cmdHelp setCDDBCommands) "This help." Nothing)
+        ("name", CommandDef (cmdSetField $ makeSetter setCDDB setName cddb) "Set database name."),
+        ("comment", CommandDef (cmdSetField $ makeSetter setCDDB setComment cddb) "Set database comment."),
+        ("version", CommandDef (cmdSetField $ makeSetter setCDDB setVersion cddb) "Set database version."),
+        ("date", CommandDef (cmdSetField $ makeSetter setCDDB setDate cddb) "Set database date."),
+        ("help", CommandDef (cmdHelp setCDDBCommands) "This help.")
     ]
 
 getSettingsCommands :: CommandMap
 getSettingsCommands = M.fromList [
-        ("historyFile", CommandDef (cmdGetField $ makeGetter settings historyFile) "Get histroy file." Nothing),
-        ("autoAddHistory", CommandDef (cmdGetField $ makeGetter settings autoAddHistory) "Get enable/disable add command to history." Nothing),
-        ("help", CommandDef (cmdHelp getSettingsCommands) "This help." Nothing)
+        ("historyFile", CommandDef (cmdGetField $ makeGetter settings historyFile) "Get histroy file."),
+        ("autoAddHistory", CommandDef (cmdGetField $ makeGetter settings autoAddHistory) "Get enable/disable add command to history."),
+        ("help", CommandDef (cmdHelp getSettingsCommands) "This help.")
     ]
 
 setSettingsCommands :: CommandMap
 setSettingsCommands = M.fromList [
-        ("historyFile", CommandDef (cmdSetField $ makeSetter setSettings setHistoryFile settings) "Set histroy file." Nothing),
-        ("autoAddHistory", CommandDef (cmdSetField $ makeSetter setSettings setAutoAddHistory settings) "Enable/disable add command to history." Nothing),
-        ("help", CommandDef (cmdHelp setSettingsCommands) "This help." Nothing)
+        ("historyFile", CommandDef (cmdSetField $ makeSetter setSettings setHistoryFile settings) "Set histroy file."),
+        ("autoAddHistory", CommandDef (cmdSetField $ makeSetter setSettings setAutoAddHistory settings) "Enable/disable add command to history."),
+        ("help", CommandDef (cmdHelp setSettingsCommands) "This help.")
     ]
 
 initialProgramState :: Settings -> ProgramState
@@ -126,7 +126,7 @@ runCommand cmds cmd state =
         (cmdName: args) ->
             case M.lookup cmdName cmds of
                 Nothing -> return $ Left $ "Command '" ++ cmdName ++ "' not found. Possible variants: " ++ findMostSimilar cmdName
-                Just (CommandDef fn _ subs) -> fn args state
+                Just (CommandDef fn _) -> fn args state
     where
         findMostSimilar cmdName = unwords $ (filter . isInfixOf) cmdName $ M.keys cmds
 
@@ -203,7 +203,7 @@ cmdQuit = undefined
 cmdHelp :: CommandMap -> Command
 cmdHelp cmds args _ = return $ Left $ M.foldrWithKey (addCommandHelp args) "Commands:\nType <command> help for command help\n" cmds
     where
-        addCommandHelp names key (CommandDef _ def subs) acc = if null names || elem key names then acc ++ "\n" ++ key ++ ":\n\t" ++ def else ""
+        addCommandHelp names key (CommandDef _ def) acc = if null names || elem key names then acc ++ "\n" ++ key ++ ":\n\t" ++ def else ""
 
 cmdCreateEmptyCDDB :: Command
 cmdCreateEmptyCDDB args state = return $ Right $ initialProgramState $ settings state
