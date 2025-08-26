@@ -20,6 +20,7 @@ import CDDB.Expression.Types
 import CDDB.Expression.Eval
 import CDDB.Tree.Syntax
 import CDDB.Tree.Filter
+import CDDB.Utils
 
 data ContextState = Finished | NonFinished deriving (Eq, Ord)
 
@@ -58,10 +59,7 @@ emptyContext t = Context {
     }
 
 matchRules :: SyntacticTree -> CDDB -> [(Rule, VariableStates)]
-matchRules t cddb = catMaybes $ map (matchRule t) $ rules cddb
-
-matchRule :: SyntacticTree -> Rule -> Maybe (Rule, VariableStates)
-matchRule t r = (r,) <$> M.map CTreePart <$> matchRuleAndFindPaths t r
+matchRules t cddb = map (mapSnd (M.map CTreePart)) $ M.elems $ matchRulesAndFindPaths t $ rules cddb
 
 evaluateRule :: Context -> Rule -> Context
 evaluateRule ctx rule@(Rule _ ruleScore _ locals conditions actions) =

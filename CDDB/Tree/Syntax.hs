@@ -7,6 +7,7 @@ import GHC.Generics
 import GHC.Read
 import Data.Aeson (ToJSON, toJSON, FromJSON, parseJSON)
 import Data.List (intercalate)
+import Data.List.Extra ((!?))
 
 import Text.ParserCombinators.ReadPrec as R
 import qualified Text.Read.Lex as L
@@ -46,6 +47,12 @@ instance Read SyntacticTree where
                         return $ Word n s
                     )
     readListPrec = readListPrecDefault
+
+findNode :: TreePath -> SyntacticTree -> Maybe SyntacticTree
+findNode (n:[]) (Tag _ ts) = ts !? n
+findNode (n: ns) (Tag _ ts) = ts !? n >>= \t -> findNode ns t
+findNode [] t = Just t
+findNode _ t = Nothing
 
 findAndRemoveNode :: TreePath -> SyntacticTree -> SyntacticTree
 findAndRemoveNode (n:[]) t@(Tag id ts) = if null bs then t else Tag id (as ++ tail bs)

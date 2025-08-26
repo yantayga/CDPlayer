@@ -9,6 +9,7 @@ import Data.Time (UTCTime)
 import Data.Map (fromList)
 import Data.Time
 import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
+import Data.UUID (UUID)
 
 import CDDB.Types
 import CDDB.Rules
@@ -31,6 +32,9 @@ emptyCDDB = CDDB {
         version = 1,
         date = UTCTime (fromOrdinalDate 0 0) 0,
         templates = fromList [],
-        rules = [],
+        rules = fromList [],
         kn = []
     }
+
+findCDDBRuleById :: CDDB -> UUID -> Maybe (RuleId, Rule)
+findCDDBRuleById cddb id = findRuleById (rules cddb) id

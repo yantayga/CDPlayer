@@ -10,6 +10,8 @@ import Data.Either.Extra (maybeToEither)
 import Data.Aeson (encode, decode, toJSON, fromJSON)
 import qualified Data.ByteString.Lazy as B
 import Text.Read
+import Data.UUID (fromString)
+import Data.Maybe (mapMaybe)
 
 import Control.Monad.Catch (catch, SomeException)
 import System.IO
@@ -18,6 +20,7 @@ import CDDB.Types
 import CDDB.Rules
 import CDDB.Runner
 import CDDB.CDDB
+import CDDB.Utils
 import CDDB.Tree.Syntax
 
 import Editor.Settings
@@ -26,6 +29,7 @@ import Editor.Tests
 data ProgramState = ProgramState {
         settings :: Settings,
         cddb :: CDDB,
+        currentRules :: [(RuleId, Rule)],
         isNotSaved :: Bool,
         currentTemplate :: Maybe Name,
         currentRule :: Maybe Rule
@@ -50,8 +54,16 @@ commands = M.fromList [
         ("load", CommandDef cmdLoadCDDB "Load database with optional file name." Nothing),
         ("help", CommandDef (cmdHelp commands) "This help." Nothing),
         ("get", CommandDef (runCommand getCommands) "Get objects field." Nothing),
-        ("set", CommandDef (runCommand setCommands) "Set objects field.." Nothing),
+        ("set", CommandDef (runCommand setCommands) "Set objects field." Nothing),
+        ("rule", CommandDef (runCommand ruleCommands) "" Nothing),
         ("quit", CommandDef cmdQuit "Quit program." Nothing)
+    ]
+
+ruleCommands :: CommandMap
+ruleCommands = M.fromList [
+        ("help", CommandDef (cmdHelp ruleCommands) "This help." Nothing),
+        ("find", CommandDef cmdFindRules "Filter rules by ids." Nothing),
+        ("filter", CommandDef cmdFilterRules "Filter rules by syntactic tree." Nothing)
     ]
 
 getCommands :: CommandMap
@@ -104,7 +116,7 @@ setSettingsCommands = M.fromList [
     ]
 
 initialProgramState :: Settings -> ProgramState
-initialProgramState settings = ProgramState {settings = settings, cddb = emptyCDDB, isNotSaved = True, currentTemplate = Nothing, currentRule = Nothing}
+initialProgramState settings = ProgramState {settings = settings, cddb = emptyCDDB, currentRules = [], isNotSaved = True, currentTemplate = Nothing, currentRule = Nothing}
 
 runMainCommand :: Command
 runMainCommand = runCommand commands
@@ -119,6 +131,25 @@ runCommand cmds cmd state =
                 Just (CommandDef fn _ subs) -> fn args state
     where
         findMostSimilar cmdName = intercalate " " $ (filter . isInfixOf) cmdName $ M.keys cmds
+
+cmdFilterRules :: Command
+cmdFilterRules args state = printAndUpdateCurrentRules (boundRuleDesc filter) (mapSnd fst) rulesFound state
+    where
+        filter = read $ unwords args
+        rulesFound = M.toList $ matchRulesAndFindPaths filter (rules $ cddb state)
+
+cmdFindRules :: Command
+cmdFindRules args state = printAndUpdateCurrentRules ruleDesc id rulesFound state
+    where
+        ids = mapMaybe fromString args
+--        rulesFound = mapMaybe (findCDDBRuleById $ cddb state) ids
+        rulesFound = M.toList $ rules $ cddb state
+
+printAndUpdateCurrentRules pf pre rulesFound state =  if null rulesFound
+    then return $ Left "No rules found"
+    else do
+        mapM (putStrLn . pf) rulesFound
+        return $ Right state {currentRules = map pre $ rulesFound}
 
 cmdSetTree :: Command
 cmdSetTree args state = let tree = (readEither $ unwords args) in
