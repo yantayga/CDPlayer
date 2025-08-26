@@ -48,12 +48,14 @@ instance Read SyntacticTree where
                     )
     readListPrec = readListPrecDefault
 
+-- Find node by path
 findNode :: TreePath -> SyntacticTree -> Maybe SyntacticTree
 findNode (n:[]) (Tag _ ts) = ts !? n
 findNode (n: ns) (Tag _ ts) = ts !? n >>= \t -> findNode ns t
 findNode [] t = Just t
 findNode _ t = Nothing
 
+-- Rempve node by path
 findAndRemoveNode :: TreePath -> SyntacticTree -> SyntacticTree
 findAndRemoveNode (n:[]) t@(Tag id ts) = if null bs then t else Tag id (as ++ tail bs)
     where

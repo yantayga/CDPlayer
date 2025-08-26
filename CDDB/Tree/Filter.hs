@@ -74,6 +74,8 @@ instance Read FilterExpression where
 
 type VariablePaths = M.Map VariableName TreePath
 
+-- Very inefficirent
+-- TOD): lopk at Trie data type
 matchFilterExpr :: SyntacticTree -> FilterExpression -> Maybe VariablePaths
 matchFilterExpr t filterExpr = matchFilterExpr' t filterExpr 0 []
 
