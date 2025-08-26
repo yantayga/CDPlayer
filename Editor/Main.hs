@@ -7,8 +7,8 @@ import System.Console.Haskeline
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Catch (catch, SomeException)
 
-import Editor.Settings
 import Editor.Commands
+import Editor.Command.Settings
 
 -- TODO: Use agreedNotToSave
 agreedNotToSave :: InputT IO Bool
