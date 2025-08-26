@@ -48,67 +48,67 @@ commands = M.fromList [
         ("save", CommandDef cmdSaveCDDB "Save database with optional file name."),
         ("load", CommandDef cmdLoadCDDB "Load database with optional file name."),
         ("help", CommandDef (cmdHelp commands) "This help."),
-        ("get", CommandDef (runCommand getCommands) "Get objects field."),
-        ("set", CommandDef (runCommand setCommands) "Set objects field."),
+        ("get",  CommandDef (runCommand getCommands) "Get objects field."),
+        ("set",  CommandDef (runCommand setCommands) "Set objects field."),
         ("rule", CommandDef (runCommand ruleCommands) ""),
-        ("dump",  CommandDef cmdDumpCDDB "Dump database."),
+        ("dump", CommandDef cmdDumpCDDB "Dump database."),
         ("quit", CommandDef cmdQuit "Quit program.")
     ]
 
 ruleCommands :: CommandMap
 ruleCommands = M.fromList [
-        ("help", CommandDef (cmdHelp ruleCommands) "This help."),
-        ("find", CommandDef cmdFindRules "Filter rules by ids."),
+        ("help",   CommandDef (cmdHelp ruleCommands) "This help."),
+        ("find",   CommandDef cmdFindRules "Filter rules by ids."),
         ("filter", CommandDef cmdFilterRules "Filter rules by syntactic tree.")
     ]
 
 getCommands :: CommandMap
 getCommands = M.fromList [
-        ("help", CommandDef (cmdHelp getCommands) "This help."),
-        ("tree", CommandDef (cmdGetField  $ makeGetter settings cddbTree) "Get current syntactic tree."),
-        ("cddb", CommandDef (runCommand getCDDBCommands) "Get database parameters."),
+        ("help",     CommandDef (cmdHelp getCommands) "This help."),
+        ("tree",     CommandDef (cmdGetField  $ makeGetter settings cddbTree) "Get current syntactic tree."),
+        ("cddb",     CommandDef (runCommand getCDDBCommands) "Get database parameters."),
         ("settings", CommandDef (runCommand getSettingsCommands) "Get settings.")
     ]
 
 setCommands :: CommandMap
 setCommands = M.fromList [
-        ("help", CommandDef (cmdHelp setCommands) "This help."),
-        ("tree", CommandDef cmdSetTree "Set current syntactic tree."),
-        ("cddb", CommandDef (runCommand setCDDBCommands) "Set database fields."),
+        ("help",     CommandDef (cmdHelp setCommands) "This help."),
+        ("tree",     CommandDef cmdSetTree "Set current syntactic tree."),
+        ("cddb",     CommandDef (runCommand setCDDBCommands) "Set database fields."),
         ("settings", CommandDef (runCommand setSettingsCommands) "Set settings fields.")
     ]
 
 getCDDBCommands :: CommandMap
 getCDDBCommands = M.fromList [
-        ("name", CommandDef (cmdGetField $ makeGetter cddb name) "Get database name."),
-        ("comment", CommandDef (cmdGetField $ makeGetter cddb comment) "Get database comment."),
-        ("version", CommandDef (cmdGetField $ makeGetter cddb version) "Get database version."),
-        ("date", CommandDef (cmdGetField $ makeGetter cddb date) "Get database date."),
+        ("name",     CommandDef (cmdGetField $ makeGetter cddb name) "Get database name."),
+        ("comment",  CommandDef (cmdGetField $ makeGetter cddb comment) "Get database comment."),
+        ("version",  CommandDef (cmdGetField $ makeGetter cddb version) "Get database version."),
+        ("date",     CommandDef (cmdGetField $ makeGetter cddb date) "Get database date."),
         ("filename", CommandDef (cmdGetField $ makeGetter settings cddbFileName) "Get database filename."),
-        ("help", CommandDef (cmdHelp getCDDBCommands) "This help.")
+        ("help",     CommandDef (cmdHelp getCDDBCommands) "This help.")
     ]
 
 setCDDBCommands :: CommandMap
 setCDDBCommands = M.fromList [
-        ("name", CommandDef (cmdSetField $ makeSetter setCDDB setName cddb) "Set database name."),
+        ("name",    CommandDef (cmdSetField $ makeSetter setCDDB setName cddb) "Set database name."),
         ("comment", CommandDef (cmdSetField $ makeSetter setCDDB setComment cddb) "Set database comment."),
         ("version", CommandDef (cmdSetField $ makeSetter setCDDB setVersion cddb) "Set database version."),
-        ("date", CommandDef (cmdSetField $ makeSetter setCDDB setDate cddb) "Set database date."),
-        ("help", CommandDef (cmdHelp setCDDBCommands) "This help.")
+        ("date",    CommandDef (cmdSetField $ makeSetter setCDDB setDate cddb) "Set database date."),
+        ("help",    CommandDef (cmdHelp setCDDBCommands) "This help.")
     ]
 
 getSettingsCommands :: CommandMap
 getSettingsCommands = M.fromList [
-        ("historyFile", CommandDef (cmdGetField $ makeGetter settings historyFile) "Get histroy file."),
+        ("historyFile",    CommandDef (cmdGetField $ makeGetter settings historyFile) "Get histroy file."),
         ("autoAddHistory", CommandDef (cmdGetField $ makeGetter settings autoAddHistory) "Get enable/disable add command to history."),
-        ("help", CommandDef (cmdHelp getSettingsCommands) "This help.")
+        ("help",           CommandDef (cmdHelp getSettingsCommands) "This help.")
     ]
 
 setSettingsCommands :: CommandMap
 setSettingsCommands = M.fromList [
-        ("historyFile", CommandDef (cmdSetField $ makeSetter setSettings setHistoryFile settings) "Set histroy file."),
+        ("historyFile",    CommandDef (cmdSetField $ makeSetter setSettings setHistoryFile settings) "Set histroy file."),
         ("autoAddHistory", CommandDef (cmdSetField $ makeSetter setSettings setAutoAddHistory settings) "Enable/disable add command to history."),
-        ("help", CommandDef (cmdHelp setSettingsCommands) "This help.")
+        ("help",           CommandDef (cmdHelp setSettingsCommands) "This help.")
     ]
 
 initialProgramState :: Settings -> ProgramState
