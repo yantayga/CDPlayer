@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
+{-# LANGUAGE NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module CDDB.Expression.Eval where
@@ -45,32 +45,32 @@ evaluateBinOpExpression _ _ Null = Null
 
 evaluateBinOpExpression Plus (CBoolean v1) (CBoolean v2)  = CBoolean $ v1 || v2
 evaluateBinOpExpression Plus (CInteger v1) (CInteger v2)  = CInteger $ v1 + v2
-evaluateBinOpExpression Plus (CDouble v1) (CInteger v2)  = CDouble $ v1 + (fromIntegral v2)
-evaluateBinOpExpression Plus (CInteger v1) (CDouble v2)  = CDouble $ (fromIntegral v1) + v2
+evaluateBinOpExpression Plus (CDouble v1) (CInteger v2)  = CDouble $ v1 + fromIntegral v2
+evaluateBinOpExpression Plus (CInteger v1) (CDouble v2)  = CDouble $ fromIntegral v1 + v2
 evaluateBinOpExpression Plus (CDouble v1) (CDouble v2)  = CDouble $ v1 + v2
 evaluateBinOpExpression Plus (CString v1) (CString v2)  = CString $ v1 ++ v2
 evaluateBinOpExpression Plus _ _  = Error
 
 evaluateBinOpExpression Minus (CInteger v1) (CInteger v2)  = CInteger $ v1 - v2
-evaluateBinOpExpression Minus (CDouble v1) (CInteger v2)  = CDouble $ v1 - (fromIntegral v2)
-evaluateBinOpExpression Minus (CInteger v1) (CDouble v2)  = CDouble $ (fromIntegral v1) - v2
+evaluateBinOpExpression Minus (CDouble v1) (CInteger v2)  = CDouble $ v1 - fromIntegral v2
+evaluateBinOpExpression Minus (CInteger v1) (CDouble v2)  = CDouble $ fromIntegral v1 - v2
 evaluateBinOpExpression Minus (CDouble v1) (CDouble v2)  = CDouble $ v1 - v2
 evaluateBinOpExpression Minus _ _  = Error
 
 evaluateBinOpExpression Multiply (CBoolean v1) (CBoolean v2)  = CBoolean $ v1 && v2
 evaluateBinOpExpression Multiply (CInteger v1) (CInteger v2)  = CInteger $ v1 * v2
-evaluateBinOpExpression Multiply (CDouble v1) (CInteger v2)  = CDouble $ v1 * (fromIntegral v2)
-evaluateBinOpExpression Multiply (CInteger v1) (CDouble v2)  = CDouble $ (fromIntegral v1) * v2
+evaluateBinOpExpression Multiply (CDouble v1) (CInteger v2)  = CDouble $ v1 * fromIntegral v2
+evaluateBinOpExpression Multiply (CInteger v1) (CDouble v2)  = CDouble $ fromIntegral v1 * v2
 evaluateBinOpExpression Multiply (CDouble v1) (CDouble v2)  = CDouble $ v1 * v2
 evaluateBinOpExpression Multiply (CString v1) (CInteger v2)  = CString $ concat $ genericTake v2 $ repeat v1
 evaluateBinOpExpression Multiply _ _  = Error
 
 evaluateBinOpExpression Divide (CBoolean v1) (CBoolean v2)  = CBoolean $ v1 && v2
 evaluateBinOpExpression Divide (CInteger v1) (CInteger v2)  = CInteger $ v1 * v2
-evaluateBinOpExpression Divide (CDouble v1) (CInteger v2)  = CDouble $ v1 * (fromIntegral v2)
-evaluateBinOpExpression Divide (CInteger v1) (CDouble v2)  = CDouble $ (fromIntegral v1) * v2
+evaluateBinOpExpression Divide (CDouble v1) (CInteger v2)  = CDouble $ v1 * fromIntegral v2
+evaluateBinOpExpression Divide (CInteger v1) (CDouble v2)  = CDouble $ fromIntegral v1 * v2
 evaluateBinOpExpression Divide (CDouble v1) (CDouble v2)  = CDouble $ v1 * v2
-evaluateBinOpExpression Divide (CString v1) (CInteger v2)  = CString [v1 !! (fromIntegral v2)]
+evaluateBinOpExpression Divide (CString v1) (CInteger v2)  = CString [v1 !! fromIntegral v2]
 evaluateBinOpExpression Divide _ _  = Error
 
 evaluateBinOpExpression IsA _ (CType v)  = CBoolean True

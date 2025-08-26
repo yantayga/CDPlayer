@@ -38,9 +38,9 @@ defalultSettings = Settings {
         autoAddHistory = True
     }
 
-readSettings :: IO (Settings)
+readSettings :: IO Settings
 readSettings = do
-    fileContent <- (flip catch) exceptonHandler $ B.readFile settingsFilename
+    fileContent <- flip catch exceptonHandler $ B.readFile settingsFilename
     case (decode :: B.ByteString -> Maybe Settings) fileContent of
         Nothing -> return defalultSettings
         Just s -> return s

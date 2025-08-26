@@ -27,7 +27,7 @@ matchRuleAndFindPaths :: SyntacticTree -> Rule -> Maybe (Rule, VariablePaths)
 matchRuleAndFindPaths t r@(Rule _ _ filterExpr _ _ _) = (r,) <$> matchFilterExpr t filterExpr
 
 matchRulesAndFindPaths :: SyntacticTree -> Rules -> M.Map RuleId (Rule, VariablePaths)
-matchRulesAndFindPaths t rs = M.mapMaybe (matchRuleAndFindPaths t) rs
+matchRulesAndFindPaths t = M.mapMaybe (matchRuleAndFindPaths t)
 
 ruleDesc :: (RuleId, Rule) -> String
 ruleDesc (id, Rule comment score filterExpression locals conditions actions) =
@@ -39,7 +39,7 @@ ruleDesc (id, Rule comment score filterExpression locals conditions actions) =
 boundRuleDesc :: SyntacticTree -> (RuleId, (Rule, VariablePaths)) -> String
 boundRuleDesc t (id, (r, vp)) = ruleDesc (id, r) ++ "\n\tVariable bounds:\n" ++ concat (M.mapWithKey (treePathDesc t) vp)
 
-treePathDesc t vn path = "\t\t" ++ vn ++ " = " ++ show path ++ " -> " ++ (printTree $ findNode path t) ++ "\n"
+treePathDesc t vn path = "\t\t" ++ vn ++ " = " ++ show path ++ " -> " ++ printTree (findNode path t) ++ "\n"
     where
         printTree Nothing = "<not found>"
         printTree (Just t) = show t

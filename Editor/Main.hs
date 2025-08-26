@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
+{-# LANGUAGE NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module Main where
@@ -13,7 +13,7 @@ import Editor.Settings
 import Editor.Commands
 
 -- TODO: Use agreedNotToSave
-agreedNotToSave :: InputT IO (Bool)
+agreedNotToSave :: InputT IO Bool
 agreedNotToSave = do
     answer <- getInputChar "CDDB is not saved. Dou you really want to quit (y/N)?"
     return $ answer == Just 'N' || answer == Just 'n'
@@ -31,7 +31,7 @@ main = do
                 Just "quit" -> do
                         liftIO $ writeSettings $ settings state
                         return ()
-                Just input -> (flip catch) exceptonHandler $ do
+                Just input -> flip catch exceptonHandler $ do
                     res <- liftIO $ runMainCommand (words input) state
                     case res of
                         Left errorMessage -> outputStrLn errorMessage >> loop state

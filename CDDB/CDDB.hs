@@ -5,9 +5,8 @@ module CDDB.CDDB where
 
 import GHC.Generics (Generic)
 import Data.Aeson (ToJSON, FromJSON)
-import Data.Time (UTCTime)
-import Data.Map (fromList)
-import Data.Time
+import Data.Time (UTCTime(..))
+import Data.Map (fromList, empty)
 import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
 import Data.UUID (UUID)
 
@@ -31,10 +30,10 @@ emptyCDDB = CDDB {
         comment = "",
         version = 1,
         date = UTCTime (fromOrdinalDate 0 0) 0,
-        templates = fromList [],
-        rules = fromList [],
+        templates = empty,
+        rules = empty,
         kn = []
     }
 
 findCDDBRuleById :: CDDB -> UUID -> Maybe (RuleId, Rule)
-findCDDBRuleById cddb id = findRuleById (rules cddb) id
+findCDDBRuleById cddb = findRuleById (rules cddb)

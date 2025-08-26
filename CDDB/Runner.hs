@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
+{-# LANGUAGE NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module CDDB.Runner where
@@ -71,28 +71,28 @@ evaluateRule ctx rule@(Rule _ ruleScore _ locals conditions actions) =
         applicable = checkConditions states conditions
 
 doActions :: Context -> Actions -> Context
-doActions ctx actions = foldl doAction ctx actions
+doActions = foldl doAction
 
 doAction :: Context -> Action -> Context
 doAction ctx Stop = ctx {state = Finished}
 doAction ctx (AddFact p) = addFact ctx p
-doAction ctx (Delete as) = ctx {currentTree = removeNodes (currentTree ctx) $ map ((M.!) (variableStates ctx)) as}
+doAction ctx (Delete as) = ctx {currentTree = removeNodes (currentTree ctx) $ map (variableStates ctx M.!) as} -- TODO: M.! can fail! use mapMaybe
 
 removeNodes :: SyntacticTree -> [Constant] -> SyntacticTree
-removeNodes t vs = foldl removeNode t vs
+removeNodes = foldl removeNode
 
 removeNode :: SyntacticTree -> Constant -> SyntacticTree
 removeNode t (CTreePart n) = findAndRemoveNode n t
 removeNode t _ = t
 
 addFact :: Context -> Primitive -> Context
-addFact ctx p = ctx {accumulatedKnowledge = evaluateFact (variableStates ctx) p: (accumulatedKnowledge ctx)}
+addFact ctx p = ctx {accumulatedKnowledge = evaluateFact (variableStates ctx) p: accumulatedKnowledge ctx}
 
 addLocals :: VariableStates -> Locals -> VariableStates
-addLocals states ls = foldl addVariableDef states ls
+addLocals = foldl addVariableDef
 
 checkConditions :: VariableStates -> Conditions -> Bool
-checkConditions states exprs = all (== (CBoolean True)) $ map (evaluateExpression states) exprs
+checkConditions states = all ((== CBoolean True) . evaluateExpression states)
 
 evaluateFact :: VariableStates -> Primitive -> Fact
 evaluateFact states (Primitive name fieldVariables) = Fact name $ map (evaluateExpression states) fieldVariables

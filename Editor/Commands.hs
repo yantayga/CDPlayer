@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
+{-# LANGUAGE NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module Editor.Commands (runMainCommand, initialProgramState, isNotSaved, settings)  where
@@ -41,7 +41,7 @@ type Command = Arguments -> ProgramState -> IO (Either String ProgramState)
 
 type HelpString = String
 
-data CommandDef = CommandDef Command HelpString (Maybe (CommandMap))
+data CommandDef = CommandDef Command HelpString (Maybe CommandMap)
 
 type CommandMap = M.Map String CommandDef
 
@@ -75,7 +75,7 @@ getCommands = M.fromList [
 setCommands :: CommandMap
 setCommands = M.fromList [
         ("help", CommandDef (cmdHelp setCommands) "This help." Nothing),
-        ("tree", CommandDef (cmdSetTree) "Set current syntactic tree." Nothing),
+        ("tree", CommandDef cmdSetTree "Set current syntactic tree." Nothing),
         ("cddb", CommandDef (runCommand setCDDBCommands) "Set database fields." Nothing),
         ("settings", CommandDef (runCommand setSettingsCommands) "Set settings fields." Nothing)
     ]
@@ -92,10 +92,10 @@ getCDDBCommands = M.fromList [
 
 setCDDBCommands :: CommandMap
 setCDDBCommands = M.fromList [
-        ("name", CommandDef (cmdSetField $ makeSetter set_cddb set_name cddb) "Set database name." Nothing),
-        ("comment", CommandDef (cmdSetField $ makeSetter set_cddb set_comment cddb) "Set database comment." Nothing),
-        ("version", CommandDef (cmdSetField $ makeSetter set_cddb set_version cddb) "Set database version." Nothing),
-        ("date", CommandDef (cmdSetField $ makeSetter set_cddb set_date cddb) "Set database date." Nothing),
+        ("name", CommandDef (cmdSetField $ makeSetter setCDDB setName cddb) "Set database name." Nothing),
+        ("comment", CommandDef (cmdSetField $ makeSetter setCDDB setComment cddb) "Set database comment." Nothing),
+        ("version", CommandDef (cmdSetField $ makeSetter setCDDB setVersion cddb) "Set database version." Nothing),
+        ("date", CommandDef (cmdSetField $ makeSetter setCDDB setDate cddb) "Set database date." Nothing),
         ("help", CommandDef (cmdHelp setCDDBCommands) "This help." Nothing)
     ]
 
@@ -108,8 +108,8 @@ getSettingsCommands = M.fromList [
 
 setSettingsCommands :: CommandMap
 setSettingsCommands = M.fromList [
-        ("historyFile", CommandDef (cmdSetField $ makeSetter set_settings set_historyFile settings) "Set histroy file." Nothing),
-        ("autoAddHistory", CommandDef (cmdSetField $ makeSetter set_settings set_autoAddHistory settings) "Enable/disable add command to history." Nothing),
+        ("historyFile", CommandDef (cmdSetField $ makeSetter setSettings setHistoryFile settings) "Set histroy file." Nothing),
+        ("autoAddHistory", CommandDef (cmdSetField $ makeSetter setSettings setAutoAddHistory settings) "Enable/disable add command to history." Nothing),
         ("help", CommandDef (cmdHelp setSettingsCommands) "This help." Nothing)
     ]
 
@@ -128,7 +128,7 @@ runCommand cmds cmd state =
                 Nothing -> return $ Left $ "Command '" ++ cmdName ++ "' not found. Possible variants: " ++ findMostSimilar cmdName
                 Just (CommandDef fn _ subs) -> fn args state
     where
-        findMostSimilar cmdName = intercalate " " $ (filter . isInfixOf) cmdName $ M.keys cmds
+        findMostSimilar cmdName = unwords $ (filter . isInfixOf) cmdName $ M.keys cmds
 
 cmdFilterRules :: Command
 cmdFilterRules args state = printAndUpdateCurrentRules (boundRuleDesc filter) (mapSnd fst) rulesFound state
@@ -146,8 +146,8 @@ cmdFindRules args state = printAndUpdateCurrentRules ruleDesc id rulesFound stat
 printAndUpdateCurrentRules pf pre rulesFound state =  if null rulesFound
     then return $ Left "No rules found"
     else do
-        mapM (putStrLn . pf) rulesFound
-        return $ Right state {currentRules = map pre $ rulesFound}
+        mapM_ (putStrLn . pf) rulesFound
+        return $ Right state {currentRules = map pre rulesFound}
 
 cmdSetTree :: Command
 cmdSetTree args state = let tree = (readEither $ unwords args) in
@@ -160,7 +160,7 @@ cmdGetField accessor [] state = return $ Left $ show $ accessor state
 cmdGetField _ _ _ = return $ Left "Too many arguments"
 
 cmdSetField :: Read b => (ProgramState -> b -> ProgramState) -> Command
-cmdSetField setter (val:[]) state = let v = readEither val in
+cmdSetField setter [val] state = let v = readEither val in
         case v of
                 Left err -> return $ Left err
                 Right a -> return $ Right $ setter state a
@@ -171,31 +171,31 @@ makeGetter :: (a -> b) -> (b -> c) -> (a -> c)
 makeGetter = flip (.)
 
 makeSetter :: (a -> b -> a) -> (b -> c -> b) -> (a -> b) -> (a -> c -> a)
-makeSetter outer inner accessor = \a c -> outer a $ inner (accessor a) c
+makeSetter outer inner accessor a c = outer a $ inner (accessor a) c
 
-set_cddb :: ProgramState -> CDDB -> ProgramState
-set_cddb state cddb = state {cddb = cddb}
+setCDDB :: ProgramState -> CDDB -> ProgramState
+setCDDB state cddb = state {cddb = cddb}
 
-set_name :: CDDB -> String -> CDDB
-set_name cddb name = cddb {name = name}
+setName :: CDDB -> String -> CDDB
+setName cddb name = cddb {name = name}
 
-set_comment :: CDDB -> String -> CDDB
-set_comment cddb comment = cddb {comment = comment}
+setComment :: CDDB -> String -> CDDB
+setComment cddb comment = cddb {comment = comment}
 
-set_version :: CDDB -> Integer -> CDDB
-set_version cddb version = cddb {version = version}
+setVersion :: CDDB -> Integer -> CDDB
+setVersion cddb version = cddb {version = version}
 
-set_date :: CDDB -> UTCTime -> CDDB
-set_date cddb date = cddb {date = date}
+setDate :: CDDB -> UTCTime -> CDDB
+setDate cddb date = cddb {date = date}
 
-set_settings :: ProgramState -> Settings -> ProgramState
-set_settings state settings = state {settings = settings}
+setSettings :: ProgramState -> Settings -> ProgramState
+setSettings state settings = state {settings = settings}
 
-set_historyFile :: Settings -> String -> Settings
-set_historyFile settings historyFile = settings {historyFile = historyFile}
+setHistoryFile :: Settings -> String -> Settings
+setHistoryFile settings historyFile = settings {historyFile = historyFile}
 
-set_autoAddHistory :: Settings -> Bool -> Settings
-set_autoAddHistory settings autoAddHistory = settings {autoAddHistory = autoAddHistory}
+setAutoAddHistory :: Settings -> Bool -> Settings
+setAutoAddHistory settings autoAddHistory = settings {autoAddHistory = autoAddHistory}
 
 cmdQuit :: Command
 cmdQuit = undefined
@@ -203,7 +203,7 @@ cmdQuit = undefined
 cmdHelp :: CommandMap -> Command
 cmdHelp cmds args _ = return $ Left $ M.foldrWithKey (addCommandHelp args) "Commands:\nType <command> help for command help\n" cmds
     where
-        addCommandHelp names key (CommandDef _ def subs) acc = if names == [] || elem key names then acc ++ "\n" ++ key ++ ":\n\t" ++ def else ""
+        addCommandHelp names key (CommandDef _ def subs) acc = if null names || elem key names then acc ++ "\n" ++ key ++ ":\n\t" ++ def else ""
 
 cmdCreateEmptyCDDB :: Command
 cmdCreateEmptyCDDB args state = return $ Right $ initialProgramState $ settings state
@@ -214,7 +214,7 @@ cmdSaveCDDB args state = do
     case extractFileName args state of
         Left errMsg -> return $ Left errMsg
         Right fn -> let updatedCDDB = (cddb state) {date = today} in do
-            B.writeFile fn $ encode (toJSON $ updatedCDDB)
+            B.writeFile fn $ encode (toJSON updatedCDDB)
             return $ Right $ updateStateWithDB state updatedCDDB fn
 
 cmdLoadCDDB :: Command
@@ -233,5 +233,5 @@ updateStateWithDB state cddb fn = state {cddb = cddb, isNotSaved = False, settin
 
 extractFileName :: Arguments -> ProgramState -> Either String String
 extractFileName [] state = maybeToEither "File name is not specified" $ cddbFileName $ settings state
-extractFileName (s:[]) _ = Right s
+extractFileName [s] _ = Right s
 extractFileName _ _ = Left "Should be only one file name"

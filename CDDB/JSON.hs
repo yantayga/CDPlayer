@@ -6,7 +6,5 @@ import Data.Text (unpack)
 
 import Control.Applicative (empty)
 
-tryParseJSON (String s) = case (readMaybe $ unpack s) of
-    Nothing -> empty
-    Just t -> return t
+tryParseJSON (String s) = maybe empty return (readMaybe $ unpack s)
 tryParseJSON _ = empty

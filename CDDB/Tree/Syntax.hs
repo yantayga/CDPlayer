@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies, OverloadedStrings #-}
+{-# LANGUAGE NoGeneralizedNewtypeDeriving, DerivingStrategies, OverloadedStrings #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module CDDB.Tree.Syntax where
@@ -29,7 +29,7 @@ instance FromJSON SyntacticTree where
 
 instance Show SyntacticTree where
     show :: SyntacticTree -> String
-    show (Tag id ts) = id ++ " [" ++ (intercalate ", " $ map show ts) ++ "]"
+    show (Tag id ts) = id ++ " [" ++ intercalate ", " (map show ts) ++ "]"
     show (Word id w) = id ++ "(" ++ show w ++ ")"
 
 instance Read SyntacticTree where
@@ -50,14 +50,14 @@ instance Read SyntacticTree where
 
 -- Find node by path
 findNode :: TreePath -> SyntacticTree -> Maybe SyntacticTree
-findNode (n:[]) (Tag _ ts) = ts !? n
+findNode [n] (Tag _ ts) = ts !? n
 findNode (n: ns) (Tag _ ts) = ts !? n >>= \t -> findNode ns t
 findNode [] t = Just t
 findNode _ t = Nothing
 
 -- Rempve node by path
 findAndRemoveNode :: TreePath -> SyntacticTree -> SyntacticTree
-findAndRemoveNode (n:[]) t@(Tag id ts) = if null bs then t else Tag id (as ++ tail bs)
+findAndRemoveNode [n] t@(Tag id ts) = if null bs then t else Tag id (as ++ tail bs)
     where
         (as, bs) = splitAt n ts
 findAndRemoveNode (n: ns) t@(Tag id ts) = if null bs then t else Tag id (as ++ findAndRemoveNode ns (head bs): tail bs)
