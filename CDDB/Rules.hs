@@ -5,7 +5,6 @@ module CDDB.Rules where
 
 import GHC.Generics
 import Data.Aeson (ToJSON, FromJSON)
-import Data.Maybe
 import qualified Data.Map as M
 import Data.UUID (UUID)
 
@@ -21,7 +20,7 @@ type Score = Double
 type RuleId = UUID
 
 findRuleById :: Rules -> RuleId -> Maybe (RuleId, Rule)
-findRuleById rules id = (id,) <$> M.lookup id rules
+findRuleById rules ruleId = (ruleId,) <$> M.lookup ruleId rules
 
 matchRuleAndFindPaths :: SyntacticTree -> Rule -> Maybe (Rule, VariablePaths)
 matchRuleAndFindPaths t r@(Rule _ _ filterExpr _ _ _) = (r,) <$> matchFilterExpr t filterExpr
@@ -30,16 +29,16 @@ matchRulesAndFindPaths :: SyntacticTree -> Rules -> M.Map RuleId (Rule, Variable
 matchRulesAndFindPaths t = M.mapMaybe (matchRuleAndFindPaths t)
 
 ruleDesc :: (RuleId, Rule) -> String
-ruleDesc (id, Rule comment score filterExpression locals conditions actions) =
-    "Id: " ++ show id ++ "\n" ++
+ruleDesc (ruleId, Rule comment score filterExpression _ _ _) =
+    "Id: " ++ show ruleId ++ "\n" ++
     "\tComment: " ++ show comment ++ "\n" ++
     "\tScore: " ++ show score ++ "\n" ++
     "\tFilterExpression: " ++ show filterExpression ++ "\n"
 
 boundRuleDesc :: SyntacticTree -> (RuleId, (Rule, VariablePaths)) -> String
-boundRuleDesc t (id, (r, vp)) = ruleDesc (id, r) ++ "\n\tVariable bounds:\n" ++ concat (M.mapWithKey (treePathDesc t) vp)
+boundRuleDesc t (ruleId, (r, vp)) = ruleDesc (ruleId, r) ++ "\n\tVariable bounds:\n" ++ concat (M.mapWithKey (treePathDesc t) vp)
 
 treePathDesc t vn path = "\t\t" ++ vn ++ " = " ++ show path ++ " -> " ++ printTree (findNode path t) ++ "\n"
     where
         printTree Nothing = "<not found>"
-        printTree (Just t) = show t
+        printTree (Just st) = show st

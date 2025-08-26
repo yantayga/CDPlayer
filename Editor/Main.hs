@@ -4,10 +4,8 @@
 module Main where
 
 import System.Console.Haskeline
-import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Catch (catch, SomeException)
-import System.IO
 
 import Editor.Settings
 import Editor.Commands

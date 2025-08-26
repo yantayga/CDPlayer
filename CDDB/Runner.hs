@@ -3,15 +3,8 @@
 
 module CDDB.Runner where
 
-import System.IO.Unsafe
-
-import GHC.Generics
-import Data.Aeson hiding (Null)
 import qualified Data.Map as M
 import Data.Maybe (Maybe(..), catMaybes)
-
-import Control.Monad
-import Control.Applicative
 
 import CDDB.Types
 import CDDB.Rules
@@ -19,7 +12,6 @@ import CDDB.CDDB
 import CDDB.Expression.Types
 import CDDB.Expression.Eval
 import CDDB.Tree.Syntax
-import CDDB.Tree.Filter
 import CDDB.Utils
 
 data ContextState = Finished | NonFinished deriving (Eq, Ord)
@@ -62,7 +54,7 @@ matchRules :: SyntacticTree -> CDDB -> [(Rule, VariableStates)]
 matchRules t cddb = map (mapSnd (M.map CTreePart)) $ M.elems $ matchRulesAndFindPaths t $ rules cddb
 
 evaluateRule :: Context -> Rule -> Context
-evaluateRule ctx rule@(Rule _ ruleScore _ locals conditions actions) =
+evaluateRule ctx (Rule _ ruleScore _ locals conditions actions) =
     if applicable
         then doActions (ctx {variableStates = states, accumulatedScore = accumulatedScore ctx * ruleScore}) actions
         else ctx

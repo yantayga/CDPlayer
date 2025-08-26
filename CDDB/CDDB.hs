@@ -6,7 +6,7 @@ module CDDB.CDDB where
 import GHC.Generics (Generic)
 import Data.Aeson (ToJSON, FromJSON)
 import Data.Time (UTCTime(..))
-import Data.Map (fromList, empty)
+import Data.Map (empty)
 import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
 import Data.UUID (UUID)
 

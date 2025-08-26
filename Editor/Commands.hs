@@ -5,23 +5,20 @@ module Editor.Commands (runMainCommand, initialProgramState, isNotSaved, setting
 
 import Data.Time
 import qualified Data.Map as M
-import Data.List (intercalate, isInfixOf)
+import Data.List (isInfixOf)
 import Data.Either.Extra (maybeToEither)
-import Data.Aeson (encode, decode, toJSON, fromJSON)
+import Data.Aeson (encode, decode, toJSON)
 import qualified Data.ByteString.Lazy as B
 import Text.Read
 import Data.UUID (fromString)
 import Data.Maybe (mapMaybe)
 
-import Control.Monad.Catch (catch, SomeException)
 import System.IO
 
 import CDDB.Types
 import CDDB.Rules
-import CDDB.Runner
 import CDDB.CDDB
 import CDDB.Utils
-import CDDB.Tree.Syntax
 
 import Editor.Settings
 
@@ -131,18 +128,19 @@ runCommand cmds cmd state =
         findMostSimilar cmdName = unwords $ (filter . isInfixOf) cmdName $ M.keys cmds
 
 cmdFilterRules :: Command
-cmdFilterRules args state = printAndUpdateCurrentRules (boundRuleDesc filter) (mapSnd fst) rulesFound state
+cmdFilterRules args state = printAndUpdateCurrentRules (boundRuleDesc filters) (mapSnd fst) rulesFound state
     where
-        filter = read $ unwords args
-        rulesFound = M.toList $ matchRulesAndFindPaths filter (rules $ cddb state)
+        filters = read $ unwords args
+        rulesFound = M.toList $ matchRulesAndFindPaths filters (rules $ cddb state)
 
 cmdFindRules :: Command
 cmdFindRules args state = printAndUpdateCurrentRules ruleDesc id rulesFound state
     where
         ids = mapMaybe fromString args
---        rulesFound = mapMaybe (findCDDBRuleById $ cddb state) ids
-        rulesFound = M.toList $ rules $ cddb state
+        rulesFound = mapMaybe (findCDDBRuleById $ cddb state) ids
+--        rulesFound = M.toList $ rules $ cddb state
 
+printAndUpdateCurrentRules :: (a -> String) -> (a -> (RuleId, Rule)) -> [a] -> ProgramState -> IO (Either String ProgramState)
 printAndUpdateCurrentRules pf pre rulesFound state =  if null rulesFound
     then return $ Left "No rules found"
     else do
@@ -206,7 +204,8 @@ cmdHelp cmds args _ = return $ Left $ M.foldrWithKey (addCommandHelp args) "Comm
         addCommandHelp names key (CommandDef _ def) acc = if null names || elem key names then acc ++ "\n" ++ key ++ ":\n\t" ++ def else ""
 
 cmdCreateEmptyCDDB :: Command
-cmdCreateEmptyCDDB args state = return $ Right $ initialProgramState $ settings state
+cmdCreateEmptyCDDB [] state = return $ Right $ initialProgramState $ settings state
+cmdCreateEmptyCDDB _ _ = return $ Left "Too many arguments."
 
 cmdSaveCDDB :: Command
 cmdSaveCDDB args state = do
@@ -225,7 +224,7 @@ cmdLoadCDDB args state = do
             handle <- openFile fn ReadMode
             fileContent <- B.hGetContents handle
             case (decode :: B.ByteString -> Maybe CDDB) fileContent of
-                Nothing -> return $ Left "Error reading file "
+                Nothing -> return $ Left "Error reading file."
                 Just cddb -> return $ Right $ updateStateWithDB state cddb fn
 
 updateStateWithDB :: ProgramState -> CDDB -> FilePath -> ProgramState
