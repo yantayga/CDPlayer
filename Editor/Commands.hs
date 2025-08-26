@@ -24,7 +24,6 @@ import CDDB.Utils
 import CDDB.Tree.Syntax
 
 import Editor.Settings
-import Editor.Tests
 
 data ProgramState = ProgramState {
         settings :: Settings,
@@ -49,7 +48,6 @@ type CommandMap = M.Map String CommandDef
 commands :: CommandMap
 commands = M.fromList [
         ("new",  CommandDef cmdCreateEmptyCDDB "Create new database." Nothing),
-        ("testdb",  CommandDef cmdCreateTestCDDB "Create test database." Nothing),
         ("save", CommandDef cmdSaveCDDB "Save database with optional file name." Nothing),
         ("load", CommandDef cmdLoadCDDB "Load database with optional file name." Nothing),
         ("help", CommandDef (cmdHelp commands) "This help." Nothing),
@@ -209,9 +207,6 @@ cmdHelp cmds args _ = return $ Left $ M.foldrWithKey (addCommandHelp args) "Comm
 
 cmdCreateEmptyCDDB :: Command
 cmdCreateEmptyCDDB args state = return $ Right $ initialProgramState $ settings state
-
-cmdCreateTestCDDB :: Command
-cmdCreateTestCDDB args state = return $ Right $ (initialProgramState $ (settings state) {cddbTree = Just testTree2}) {cddb = testCDDB}
 
 cmdSaveCDDB :: Command
 cmdSaveCDDB args state = do
