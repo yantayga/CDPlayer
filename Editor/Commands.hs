@@ -111,7 +111,7 @@ setSettingsCommands :: CommandMap
 setSettingsCommands = M.fromList [
         ("historyFile",       CommandDef (cmdSetField $ makeSetter setSettings setHistoryFile settings) "Set histroy file."),
         ("autoAddHistory",    CommandDef (cmdSetField $ makeSetter setSettings setAutoAddHistory settings) "Enable/disable add command to history."),
-        ("maxRecursionDepth", CommandDef (cmdSetField $ makeSetter setSettings setAutoAddHistory settings) "Set maximum recursion depth."),
+        ("maxRecursionDepth", CommandDef (cmdSetField $ makeSetter setSettings setMaxRecursionDepth settings) "Set maximum recursion depth."),
         ("help",              CommandDef (cmdHelp setSettingsCommands) "This help.")
     ]
 
@@ -143,18 +143,18 @@ cmdRun args state = if null results
         results = applyTree (cddb state) tree (maxRecursionDepth $ settings state)
         printResult result = do
             putStr "Score:"
-            putStrLn (show $ accumulatedScore result)
+            print (accumulatedScore result)
             putStrLn "Tree after run:"
-            putStrLn (show $ currentTree result)
+            print (currentTree result)
             putStrLn "Maximum recursion depth:"
-            putStrLn (show $ recursionDepth result)
+            print (recursionDepth result)
             putStrLn "Accumulated knowledge:"
-            putStrLn (show $ accumulatedKnowledge result)
+            print (accumulatedKnowledge result)
             return ()
 
 cmdDumpCDDB :: Command
 cmdDumpCDDB [] state = do
-    putStrLn (show $ cddb state)
+    print (cddb state)
     return $ Right state
 cmdDumpCDDB _ _ = return $ Left "Too many arguments"
 
@@ -224,6 +224,9 @@ setHistoryFile settings historyFile = settings {historyFile = historyFile}
 
 setAutoAddHistory :: Settings -> Bool -> Settings
 setAutoAddHistory settings autoAddHistory = settings {autoAddHistory = autoAddHistory}
+
+setMaxRecursionDepth :: Settings -> RecursionDepth -> Settings
+setMaxRecursionDepth settings maxRecursionDepth = settings {maxRecursionDepth = maxRecursionDepth}
 
 cmdQuit :: Command
 cmdQuit = undefined
