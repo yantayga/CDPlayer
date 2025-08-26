@@ -75,26 +75,26 @@ instance Read FilterExpression where
 type VariablePaths = M.Map VariableName TreePath
 
 matchFilterExpr :: SyntacticTree -> FilterExpression -> Maybe VariablePaths
-matchFilterExpr t filterExpr = matchFilterExpr' t 0 filterExpr []
+matchFilterExpr t filterExpr = matchFilterExpr' t filterExpr 0 []
 
-matchFilterExpr' :: SyntacticTree -> TreePos -> FilterExpression -> TreePath -> Maybe VariablePaths
-matchFilterExpr' _ _ Asterisk _ = Just emptyVariablePaths
-matchFilterExpr' t@(Tag id ts) pos (FilterTag Nothing fid fs) path = guard (id == fid) >> (matchFilterExprs ts pos fs $ pos:path)
-matchFilterExpr' t@(Tag id ts) pos (FilterTag (Just vn) fid fs) path = guard (id == fid) >> (matchFilterExprs ts pos fs $ pos:path) >>= \vs -> Just $ M.insert vn (tail $ reverse $ pos:path) vs
-matchFilterExpr' (Word id s) pos (FilterWord Nothing fid fs) _ = guard (id == fid && s == fs) >> Just emptyVariablePaths
-matchFilterExpr' (Word id s) pos (FilterWord (Just vn) fid fs) path = guard (id == fid && s == fs) >> Just (M.singleton vn (tail $ reverse $ pos:path))
+matchFilterExpr' :: SyntacticTree -> FilterExpression -> TreePos -> TreePath -> Maybe VariablePaths
+matchFilterExpr' _ Asterisk _ _ = Just M.empty
+matchFilterExpr' (Tag id ts) (FilterTag Nothing fid fs) pos path    = guard (id == fid) >> (matchFilterExprs ts fs pos $ pos:path)
+matchFilterExpr' (Tag id ts) (FilterTag (Just vn) fid fs) pos path  = guard (id == fid) >> (matchFilterExprs ts fs pos $ pos:path) >>= \vs -> Just (addPath vn pos path vs)
+matchFilterExpr' (Word id s) (FilterWord Nothing fid fs) pos _      = guard (id == fid && s == fs) >> Just M.empty
+matchFilterExpr' (Word id s) (FilterWord (Just vn) fid fs) pos path = guard (id == fid && s == fs) >> Just (addPath vn pos path M.empty)
 matchFilterExpr' _ _ _ _ = Nothing
 
-matchFilterExprs :: [SyntacticTree] -> TreePos -> [FilterExpression] -> TreePath -> Maybe VariablePaths
-matchFilterExprs [] _ [] _ = Just emptyVariablePaths
-matchFilterExprs _ _ [] _ = Nothing
-matchFilterExprs [] pos (Asterisk: sfs) path = matchFilterExprs [] pos sfs path
-matchFilterExprs [] _ _ _ = Nothing
-matchFilterExprs ts@(t: sts) pos fs@(Asterisk: sfs) path = matchFilterExprs ts pos sfs path <|> matchFilterExprs sts (pos + 1) fs path
-matchFilterExprs (t: sts) pos (f: sfs) path = do
-    vs1 <- matchFilterExpr' t pos f path
-    vs2 <- matchFilterExprs sts (pos + 1) sfs path
-    return $ M.unionWith const vs1 vs2
+addPath :: VariableName -> TreePos -> TreePath -> VariablePaths -> VariablePaths
+addPath vn n ns vs = M.insert vn (tail $ reverse $ n:ns) vs
 
-emptyVariablePaths :: VariablePaths
-emptyVariablePaths = M.empty
+matchFilterExprs :: [SyntacticTree] -> [FilterExpression] -> TreePos -> TreePath -> Maybe VariablePaths
+matchFilterExprs [] [] _ _ = Just M.empty
+matchFilterExprs _ [] _ _ = Nothing
+matchFilterExprs [] (Asterisk: sfs) pos path = matchFilterExprs [] sfs pos path
+matchFilterExprs [] _ _ _ = Nothing
+matchFilterExprs ts@(t: sts) fs@(Asterisk: sfs) pos path = matchFilterExprs ts sfs pos path <|> matchFilterExprs sts fs (pos + 1) path
+matchFilterExprs (t: sts) (f: sfs) pos path = do
+    vs1 <- matchFilterExpr' t f pos path
+    vs2 <- matchFilterExprs sts sfs (pos + 1) path
+    return $ M.unionWith const vs1 vs2
