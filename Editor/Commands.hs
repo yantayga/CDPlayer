@@ -15,9 +15,11 @@ import Control.Monad.Catch (catch, SomeException)
 import System.IO
 
 import CDDB.Types
-import CDDB.Process
+import CDDB.Rules
 import CDDB.Runner
-import CDDB.SyntacticTree
+import CDDB.CDDB
+import CDDB.Tree.Syntax
+
 import Editor.Settings
 import Editor.Tests
 
@@ -178,7 +180,7 @@ cmdCreateEmptyCDDB :: Command
 cmdCreateEmptyCDDB args state = return $ Right $ initialProgramState $ settings state
 
 cmdCreateTestCDDB :: Command
-cmdCreateTestCDDB args state = return $ Right $ (initialProgramState $ (settings state) {cddbTree = Just testSTree2}) {cddb = testCDDB}
+cmdCreateTestCDDB args state = return $ Right $ (initialProgramState $ (settings state) {cddbTree = Just testTree2}) {cddb = testCDDB}
 
 cmdSaveCDDB :: Command
 cmdSaveCDDB args state = do

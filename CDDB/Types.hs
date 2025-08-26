@@ -4,29 +4,11 @@
 module CDDB.Types where
 
 import GHC.Generics
-import Data.Aeson
-import Data.Time
-import Data.Map
+import Data.Aeson (ToJSON, FromJSON)
 
-import CDDB.SyntacticTree
-
-data CDDB = CDDB {
-        name :: String,
-        comment :: String,
-        version :: Integer,
-        date :: UTCTime,
-        templates :: PrimitiveTemplates,
-        rules :: Rules,
-        kn :: Knowledge
-    } deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
-type PrimitiveTemplates = Map Name FieldDefinitions
-
-type FieldDefinitions = [Name]
-
-type Rules = [Rule]
-
-data Rule = Rule Comment Score FilterExpression Locals Conditions Actions deriving (Eq, Show, Generic, ToJSON, FromJSON)
+type Name = String
+type VariableName = String
+type Comment = String
 
 type Locals = [VariableDef]
 
@@ -36,9 +18,9 @@ type Conditions = [Expression]
 
 type FieldVariables = [Expression]
 
-type Actions = [Action]
-
 data Primitive = Primitive Name FieldVariables deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+type Actions = [Action]
 
 data Action = Stop
     | Delete [VariableName]
@@ -75,11 +57,5 @@ data BinOp = Plus | Minus | Divide | Multiply
     | Dot
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
--- Aliases
-type Name = String
-type Comment = String
-type Score = Double
-type Match = String
 type TreePos = Int
 type TreePath = [TreePos]
-

@@ -8,14 +8,18 @@ import System.IO.Unsafe
 import GHC.Generics
 import Data.Aeson hiding (Null)
 import qualified Data.Map as M
-import Data.Maybe
+import Data.Maybe (Maybe(..), catMaybes)
 
 import Control.Monad
 import Control.Applicative
 
 import CDDB.Types
-import CDDB.Expressions
-import CDDB.SyntacticTree
+import CDDB.Rules
+import CDDB.CDDB
+import CDDB.Expression.Types
+import CDDB.Expression.Eval
+import CDDB.Tree.Syntax
+import CDDB.Tree.Filter
 
 data ContextState = Finished | NonFinished deriving (Eq, Ord)
 
@@ -57,26 +61,7 @@ matchRules :: SyntacticTree -> CDDB -> [(Rule, VariableStates)]
 matchRules t cddb = catMaybes $ map (matchRule t) $ rules cddb
 
 matchRule :: SyntacticTree -> Rule -> Maybe (Rule, VariableStates)
-matchRule t r@(Rule _ _ filterExpr _ _ _) = (r,) <$> matchFilter t 0 filterExpr []
-
-matchFilter :: SyntacticTree -> TreePos -> FilterExpression -> TreePath -> Maybe VariableStates
-matchFilter _ _ Asterisk _ = Just emptyVariableStates
-matchFilter t@(Tag id ts) pos (FilterTag Nothing fid fs) path = guard (id == fid) >> (matchFilters ts pos fs $ pos:path)
-matchFilter t@(Tag id ts) pos (FilterTag (Just vn) fid fs) path = guard (id == fid) >> (matchFilters ts pos fs $ pos:path) >>= \vs -> Just $ M.insert vn (CTreePart $ tail $ reverse $ pos:path) vs
-matchFilter (Word id s) pos (FilterWord Nothing fid fs) _ = guard (id == fid && s == fs) >> Just emptyVariableStates
-matchFilter (Word id s) pos (FilterWord (Just vn) fid fs) path = guard (id == fid && s == fs) >> Just (M.singleton vn (CTreePart $ reverse $ pos:path))
-matchFilter _ _ _ _ = Nothing
-
-matchFilters :: [SyntacticTree] -> TreePos -> [FilterExpression] -> TreePath -> Maybe VariableStates
-matchFilters [] _ [] _ = Just emptyVariableStates
-matchFilters _ _ [] _ = Nothing
-matchFilters [] pos (Asterisk: sfs) path = matchFilters [] pos sfs path
-matchFilters [] _ _ _ = Nothing
-matchFilters ts@(t: sts) pos fs@(Asterisk: sfs) path = matchFilters ts pos sfs path <|> matchFilters sts (pos + 1) fs path
-matchFilters (t: sts) pos (f: sfs) path = do
-    vs1 <- matchFilter t pos f path
-    vs2 <- matchFilters sts (pos + 1) sfs path
-    return $ M.unionWith const vs1 vs2
+matchRule t r = (r,) <$> M.map CTreePart <$> matchRuleAndFindPaths t r
 
 evaluateRule :: Context -> Rule -> Context
 evaluateRule ctx rule@(Rule _ ruleScore _ locals conditions actions) =
@@ -102,23 +87,11 @@ removeNode :: SyntacticTree -> Constant -> SyntacticTree
 removeNode t (CTreePart n) = findAndRemoveNode n t
 removeNode t _ = t
 
-findAndRemoveNode :: TreePath -> SyntacticTree -> SyntacticTree
-findAndRemoveNode (n:[]) t@(Tag id ts) = if null bs then t else Tag id (as ++ tail bs)
-    where
-        (as, bs) = splitAt n ts
-findAndRemoveNode (n: ns) t@(Tag id ts) = if null bs then t else Tag id (as ++ findAndRemoveNode ns (head bs): tail bs)
-    where
-        (as, bs) = splitAt n ts
-findAndRemoveNode _ t = t
-
 addFact :: Context -> Primitive -> Context
 addFact ctx p = ctx {accumulatedKnowledge = evaluateFact (variableStates ctx) p: (accumulatedKnowledge ctx)}
 
 addLocals :: VariableStates -> Locals -> VariableStates
 addLocals states ls = foldl addVariableDef states ls
-
-addVariableDef :: VariableStates -> VariableDef -> VariableStates
-addVariableDef states (VariableDef name expr) = M.insert name (evaluateExpression states expr) states
 
 checkConditions :: VariableStates -> Conditions -> Bool
 checkConditions states exprs = all (== (CBoolean True)) $ map (evaluateExpression states) exprs

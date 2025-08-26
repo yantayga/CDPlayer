@@ -1,13 +1,28 @@
 {-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module CDDB.Process where
+module CDDB.CDDB where
 
+import GHC.Generics (Generic)
+import Data.Aeson (ToJSON, FromJSON)
+import Data.Time (UTCTime)
 import Data.Map (fromList)
 import Data.Time
 import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
 
 import CDDB.Types
+import CDDB.Rules
+import CDDB.Templates
+
+data CDDB = CDDB {
+        name :: Name,
+        comment :: Comment,
+        version :: Integer,
+        date :: UTCTime,
+        templates :: PrimitiveTemplates,
+        rules :: Rules,
+        kn :: Knowledge
+    } deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 emptyCDDB :: CDDB
 emptyCDDB = CDDB {
@@ -19,5 +34,3 @@ emptyCDDB = CDDB {
         rules = [],
         kn = []
     }
-
-

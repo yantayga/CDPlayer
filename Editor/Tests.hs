@@ -5,13 +5,16 @@ import Data.Time
 import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
 
 import CDDB.Types
-import CDDB.SyntacticTree
+import CDDB.Rules
+import CDDB.CDDB
+import CDDB.Tree.Syntax
+import CDDB.Tree.Filter
 
 testTree1 = Tag "S" []
 testTree2 = Tag "S" [Tag "NP" [Word "DET" "the", Word "N" "cat"], Tag "VP" [Word "V" "chase", Tag "NP" [Word "DET" "a", Word "N" "mouse"]]]
 
 testFilter1 = FilterTag Nothing "S" []
-testFilter2 = FilterTag Nothing "S" [Asterisk, FilterTag (Just "np") "NP" [Asterisk], FilterTag (Just "vp") "VP" [Asterisk, FilterWord "V" "chase", Asterisk], Asterisk]
+testFilter2 = FilterTag Nothing "S" [Asterisk, FilterTag (Just "np") "NP" [Asterisk], FilterTag (Just "vp") "VP" [Asterisk, FilterWord Nothing "V" "chase", Asterisk], Asterisk]
 
 testCDDB :: CDDB
 testCDDB = CDDB {

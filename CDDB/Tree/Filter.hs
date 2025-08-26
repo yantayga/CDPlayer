@@ -1,56 +1,23 @@
 {-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies, OverloadedStrings #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module CDDB.SyntacticTree where
+module CDDB.Tree.Filter where
 
 import GHC.Generics
 import GHC.Read
-import Data.Aeson (ToJSON, toJSON, FromJSON, parseJSON, Value(..))
+import Data.Aeson (ToJSON, toJSON, FromJSON, parseJSON)
 import Data.List (intercalate)
-import Data.Text (unpack)
-import Text.Read (readMaybe)
+import qualified Data.Map as M
 
-import Control.Applicative
+import Control.Monad (guard)
+import Control.Applicative ((<|>))
 
---import Text.Parsec hiding(choice, (<|>))
 import Text.ParserCombinators.ReadPrec as R
 import qualified Text.Read.Lex as L
 
-import CDDB.Parsers
-
-type VariableName = String
-type TagId = String
-
-data SyntacticTree = Tag TagId [SyntacticTree]
-    | Word TagId String
-    deriving (Eq, Generic)
-
-instance ToJSON SyntacticTree where
-    toJSON t = toJSON $ show t
-
-instance FromJSON SyntacticTree where
-   parseJSON = tryParseJSON
-
-instance Show SyntacticTree where
-    show :: SyntacticTree -> String
-    show (Tag id ts) = id ++ " [" ++ (intercalate ", " $ map show ts) ++ "]"
-    show (Word id w) = id ++ "(" ++ show w ++ ")"
-
-instance Read SyntacticTree where
-    readPrec = choice [readTag, readWord]
-        where
-            readTag = do
-                L.Ident n <- lexP
-                l <- step readListPrec
-                return $ Tag n l
-            readWord = do
-                L.Ident n <- lexP
-                paren
-                    ( do
-                        L.String s <- lexP
-                        return $ Word n s
-                    )
-    readListPrec = readListPrecDefault
+import CDDB.Types
+import CDDB.Tree.Syntax
+import CDDB.JSON
 
 data FilterExpression = Asterisk
     | FilterTag (Maybe VariableName) TagId [FilterExpression]
@@ -105,8 +72,29 @@ instance Read FilterExpression where
                     )
     readListPrec = readListPrecDefault
 
-tryParseJSON (String s) = case (readMaybe $ unpack s) of
-    Nothing -> empty
-    Just t -> return t
-tryParseJSON _ = empty
+type VariablePaths = M.Map VariableName TreePath
 
+matchFilterExpr :: SyntacticTree -> FilterExpression -> Maybe VariablePaths
+matchFilterExpr t filterExpr = matchFilterExpr' t 0 filterExpr []
+
+matchFilterExpr' :: SyntacticTree -> TreePos -> FilterExpression -> TreePath -> Maybe VariablePaths
+matchFilterExpr' _ _ Asterisk _ = Just emptyVariablePaths
+matchFilterExpr' t@(Tag id ts) pos (FilterTag Nothing fid fs) path = guard (id == fid) >> (matchFilterExprs ts pos fs $ pos:path)
+matchFilterExpr' t@(Tag id ts) pos (FilterTag (Just vn) fid fs) path = guard (id == fid) >> (matchFilterExprs ts pos fs $ pos:path) >>= \vs -> Just $ M.insert vn (tail $ reverse $ pos:path) vs
+matchFilterExpr' (Word id s) pos (FilterWord Nothing fid fs) _ = guard (id == fid && s == fs) >> Just emptyVariablePaths
+matchFilterExpr' (Word id s) pos (FilterWord (Just vn) fid fs) path = guard (id == fid && s == fs) >> Just (M.singleton vn (tail $ reverse $ pos:path))
+matchFilterExpr' _ _ _ _ = Nothing
+
+matchFilterExprs :: [SyntacticTree] -> TreePos -> [FilterExpression] -> TreePath -> Maybe VariablePaths
+matchFilterExprs [] _ [] _ = Just emptyVariablePaths
+matchFilterExprs _ _ [] _ = Nothing
+matchFilterExprs [] pos (Asterisk: sfs) path = matchFilterExprs [] pos sfs path
+matchFilterExprs [] _ _ _ = Nothing
+matchFilterExprs ts@(t: sts) pos fs@(Asterisk: sfs) path = matchFilterExprs ts pos sfs path <|> matchFilterExprs sts (pos + 1) fs path
+matchFilterExprs (t: sts) pos (f: sfs) path = do
+    vs1 <- matchFilterExpr' t pos f path
+    vs2 <- matchFilterExprs sts (pos + 1) sfs path
+    return $ M.unionWith const vs1 vs2
+
+emptyVariablePaths :: VariablePaths
+emptyVariablePaths = M.empty

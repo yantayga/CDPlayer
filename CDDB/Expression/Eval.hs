@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module CDDB.Expressions where
+module CDDB.Expression.Eval where
 
 import GHC.Generics
 import Data.Aeson hiding (Null, Error)
@@ -10,12 +10,14 @@ import Data.Maybe
 import qualified Data.Map as M
 
 import CDDB.Types
-import CDDB.SyntacticTree
-
-type VariableStates = M.Map VariableName Constant
+import CDDB.Expression.Types
+import CDDB.Tree.Syntax
 
 emptyVariableStates :: VariableStates
 emptyVariableStates = M.empty
+
+addVariableDef :: VariableStates -> VariableDef -> VariableStates
+addVariableDef states (VariableDef name expr) = M.insert name (evaluateExpression states expr) states
 
 evaluateExpression :: VariableStates -> Expression -> Constant
 evaluateExpression _ (Constant const) = const

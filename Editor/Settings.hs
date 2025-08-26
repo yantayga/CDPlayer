@@ -12,7 +12,7 @@ import qualified System.Console.Haskeline as HL
 
 import Control.Monad.Catch (catch, SomeException)
 
-import CDDB.SyntacticTree
+import CDDB.Tree.Syntax
 
 data Settings = Settings {
         cddbFileName :: Maybe FilePath,
