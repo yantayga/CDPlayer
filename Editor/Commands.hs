@@ -51,6 +51,7 @@ commands = M.fromList [
         ("get", CommandDef (runCommand getCommands) "Get objects field."),
         ("set", CommandDef (runCommand setCommands) "Set objects field."),
         ("rule", CommandDef (runCommand ruleCommands) ""),
+        ("dump",  CommandDef cmdDumpCDDB "Dump database."),
         ("quit", CommandDef cmdQuit "Quit program.")
     ]
 
@@ -126,6 +127,12 @@ runCommand cmds cmd state =
                 Just (CommandDef fn _) -> fn args state
     where
         findMostSimilar cmdName = unwords $ (filter . isInfixOf) cmdName $ M.keys cmds
+
+cmdDumpCDDB :: Command
+cmdDumpCDDB [] state = do
+    putStrLn (show $ cddb state)
+    return $ Right state
+cmdDumpCDDB _ _ = return $ Left "Too many arguments"
 
 cmdFilterRules :: Command
 cmdFilterRules args state = printAndUpdateCurrentRules (boundRuleDesc filters) (mapSnd fst) rulesFound state
