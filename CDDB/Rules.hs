@@ -27,6 +27,11 @@ addRules = foldl insertRule
     where
         insertRule rs (ruleId, rule) = M.insertWith const ruleId rule rs
 
+deleteRules :: Rules -> [RuleId] -> Rules
+deleteRules = foldl deleteRule
+    where
+        deleteRule rs ruleId = M.delete ruleId rs
+
 findRuleById :: Rules -> RuleId -> Maybe (RuleId, Rule)
 findRuleById rules ruleId = (ruleId,) <$> M.lookup ruleId rules
 

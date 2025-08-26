@@ -11,7 +11,7 @@ import Data.Aeson (encode, decode, toJSON)
 import qualified Data.ByteString.Lazy as B
 import Text.Read
 import Data.UUID (fromString)
-import Data.Maybe (mapMaybe, fromJust)
+import Data.Maybe (mapMaybe, fromJust, catMaybes)
 import Data.UUID.V1
 
 import Control.Monad (replicateM)
@@ -60,14 +60,17 @@ commands = M.fromList [
 
 ruleCommands :: CommandMap
 ruleCommands = M.fromList [
-        ("help",   CommandDef (cmdHelp ruleCommands) "This help."),
-        ("show",   CommandDef cmdShowRules "Show current rules."),
-        ("new",    CommandDef cmdNewRule "Set current rules to a new one."),
-        ("add",    CommandDef cmdAddRule "Add rule to current rules."),
-        ("write",  CommandDef cmdWriteRules "Add/update current rules to cddb."),
-        ("renew",  CommandDef cmdRenewRules "Regenerate rules ids."),
-        ("find",   CommandDef cmdFindRules "Filter rules by ids."),
-        ("filter", CommandDef cmdFilterRules "Filter rules by syntactic tree.")
+        ("help",    CommandDef (cmdHelp ruleCommands) "This help."),
+        ("show",    CommandDef cmdShowRules "Show current rules."),
+        ("clear",   CommandDef cmdClearRules "Clear current rules."),
+        ("new",     CommandDef cmdNewRule "Set current rules to a new one."),
+        ("add",     CommandDef cmdAddRule "Add rule to current rules."),
+        ("write",   CommandDef cmdWriteRules "Add/update current rules to cddb."),
+        ("renew",   CommandDef cmdRenewRules "Regenerate rules ids."),
+        ("delete",  CommandDef cmdDeleteRule "Delete rule from the current rules"),
+        ("wipe",    CommandDef cmdWipeRule "Delete rule with id from CDDB."),
+        ("find",    CommandDef cmdFindRules "Filter rules by ids."),
+        ("filter",  CommandDef cmdFilterRules "Filter rules by syntactic tree.")
     ]
 
 getCommands :: CommandMap
@@ -176,11 +179,25 @@ cmdNewRule [] state = do
     return $ Right state {currentRules = [(newUUID, newRule)]}
 cmdNewRule _ _ = errTooManyArguments
 
+cmdClearRules :: Command
+cmdClearRules [] state = return $ Right state {currentRules = []}
+cmdClearRules _ _ = errTooManyArguments
+
 cmdAddRule :: Command
 cmdAddRule [] state = do
     Just newUUID <- nextUUID
     return $ Right state {currentRules = (newUUID, newRule) : currentRules state}
 cmdAddRule _ _ = errTooManyArguments
+
+cmdDeleteRule :: Command
+cmdDeleteRule args state = return $ Right state {currentRules = filter isIdInIds $ currentRules state}
+    where
+        isIdInIds (ruleId, _) = elem ruleId $ catMaybes $ map fromString args
+
+cmdWipeRule :: Command
+cmdWipeRule args state = return $ Right state {cddb = deleteRulesToCDDB (cddb state) ids}
+    where
+        ids = catMaybes $ map fromString args
 
 cmdWriteRules :: Command
 cmdWriteRules [] state = return $ Right state {cddb = addRulesToCDDB (cddb state) (currentRules state)}

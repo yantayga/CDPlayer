@@ -40,3 +40,6 @@ findCDDBRuleById cddb = findRuleById (rules cddb)
 
 addRulesToCDDB :: CDDB -> [(RuleId, Rule)] -> CDDB
 addRulesToCDDB cddb newRules = cddb {rules = addRules (rules cddb) newRules}
+
+deleteRulesToCDDB :: CDDB -> [RuleId] -> CDDB
+deleteRulesToCDDB cddb ids = cddb {rules = deleteRules (rules cddb) ids}
