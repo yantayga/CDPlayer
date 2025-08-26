@@ -23,3 +23,4 @@ cabal.project.local~
 .ghc.environment.*
 editorSettings.json
 .cddb_history
+*.cddb
