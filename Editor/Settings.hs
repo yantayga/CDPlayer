@@ -7,18 +7,19 @@ import GHC.Generics
 import Data.Aeson
 import qualified Data.ByteString.Lazy as B
 
-import System.IO
 import qualified System.Console.Haskeline as HL
 
 import Control.Monad.Catch (catch, SomeException)
 
 import CDDB.Tree.Syntax
+import CDDB.Runner
 
 data Settings = Settings {
         cddbFileName :: Maybe FilePath,
         cddbTree :: Maybe SyntacticTree,
         historyFile :: String,
-        autoAddHistory :: Bool
+        autoAddHistory :: Bool,
+        maxRecursionDepth :: RecursionDepth
     } deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 haskelinePrefsFromSettings :: Settings -> HL.Prefs
@@ -35,7 +36,8 @@ defalultSettings = Settings {
         cddbFileName = Nothing,
         cddbTree = Nothing,
         historyFile = ".cddb_history",
-        autoAddHistory = True
+        autoAddHistory = True,
+        maxRecursionDepth = 10
     }
 
 readSettings :: IO Settings
@@ -46,7 +48,7 @@ readSettings = do
         Just s -> return s
     where
         exceptonHandler :: SomeException -> IO B.ByteString
-        exceptonHandler ex = return B.empty
+        exceptonHandler _ = return B.empty
 
 writeSettings :: Settings -> IO ()
 writeSettings settings = do

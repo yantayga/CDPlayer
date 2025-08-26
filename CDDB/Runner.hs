@@ -4,7 +4,6 @@
 module CDDB.Runner where
 
 import qualified Data.Map as M
-import Data.Maybe (Maybe(..), catMaybes)
 
 import CDDB.Types
 import CDDB.Rules
@@ -16,22 +15,26 @@ import CDDB.Utils
 
 data ContextState = Finished | NonFinished deriving (Eq, Ord)
 
+type RecursionDepth = Int
+
 data Context = Context {
         variableStates :: VariableStates,
         currentTree :: SyntacticTree,
         accumulatedScore :: Score,
         accumulatedKnowledge :: Knowledge,
-        state :: ContextState
+        state :: ContextState,
+        recursionDepth :: RecursionDepth
     }
 
-applyTree :: CDDB -> SyntacticTree -> [Context]
-applyTree db t = filter ((== Finished) . state) $ applyTreeWithContext db $ emptyContext t
+applyTree :: CDDB -> SyntacticTree -> RecursionDepth -> [Context]
+applyTree db t mrd = applyTreeWithContext db (emptyContext t) mrd
 
-applyTreeWithContext :: CDDB -> Context -> [Context]
-applyTreeWithContext db ctx = finished ++ concatMap subApply nonfinished
+applyTreeWithContext :: CDDB -> Context -> RecursionDepth -> [Context]
+applyTreeWithContext db ctx mrd = finished ++ deep ++ concatMap subApply shallow
     where
         (finished, nonfinished) = span ((== Finished) . state) $ applyTreeOnce db ctx
-        subApply ctx = applyTreeWithContext db $ resetContext ctx
+        (shallow, deep) = span ((< mrd) . recursionDepth) nonfinished
+        subApply sctx = applyTreeWithContext db (resetContext sctx) mrd
 
 applyTreeOnce :: CDDB -> Context-> [Context]
 applyTreeOnce db ctx = map evaluateRuleAt $ matchRules (currentTree ctx) db
@@ -39,7 +42,7 @@ applyTreeOnce db ctx = map evaluateRuleAt $ matchRules (currentTree ctx) db
         evaluateRuleAt (r, vs) = evaluateRule ctx {variableStates = vs} r
 
 resetContext :: Context -> Context
-resetContext ctx = ctx {variableStates = emptyVariableStates, state = NonFinished}
+resetContext ctx = ctx {variableStates = emptyVariableStates, state = NonFinished, recursionDepth = 1 + recursionDepth ctx}
 
 emptyContext :: SyntacticTree -> Context
 emptyContext t = Context {
@@ -47,7 +50,8 @@ emptyContext t = Context {
         currentTree = t,
         accumulatedScore = 1.0,
         accumulatedKnowledge = [],
-        state = NonFinished
+        state = NonFinished,
+        recursionDepth = 0
     }
 
 matchRules :: SyntacticTree -> CDDB -> [(Rule, VariableStates)]

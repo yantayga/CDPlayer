@@ -19,6 +19,7 @@ import CDDB.Types
 import CDDB.Rules
 import CDDB.CDDB
 import CDDB.Utils
+import CDDB.Runner
 
 import Editor.Settings
 
@@ -51,6 +52,7 @@ commands = M.fromList [
         ("get",  CommandDef (runCommand getCommands) "Get objects field."),
         ("set",  CommandDef (runCommand setCommands) "Set objects field."),
         ("rule", CommandDef (runCommand ruleCommands) ""),
+        ("run",  CommandDef cmdRun "Run for syntactic tree."),
         ("dump", CommandDef cmdDumpCDDB "Dump database."),
         ("quit", CommandDef cmdQuit "Quit program.")
     ]
@@ -99,16 +101,18 @@ setCDDBCommands = M.fromList [
 
 getSettingsCommands :: CommandMap
 getSettingsCommands = M.fromList [
-        ("historyFile",    CommandDef (cmdGetField $ makeGetter settings historyFile) "Get histroy file."),
-        ("autoAddHistory", CommandDef (cmdGetField $ makeGetter settings autoAddHistory) "Get enable/disable add command to history."),
-        ("help",           CommandDef (cmdHelp getSettingsCommands) "This help.")
+        ("historyFile",       CommandDef (cmdGetField $ makeGetter settings historyFile) "Get histroy file."),
+        ("autoAddHistory",    CommandDef (cmdGetField $ makeGetter settings autoAddHistory) "Get enable/disable add command to history."),
+        ("maxRecursionDepth", CommandDef (cmdGetField $ makeGetter settings maxRecursionDepth) "Get maximum recursion depth."),
+        ("help",              CommandDef (cmdHelp getSettingsCommands) "This help.")
     ]
 
 setSettingsCommands :: CommandMap
 setSettingsCommands = M.fromList [
-        ("historyFile",    CommandDef (cmdSetField $ makeSetter setSettings setHistoryFile settings) "Set histroy file."),
-        ("autoAddHistory", CommandDef (cmdSetField $ makeSetter setSettings setAutoAddHistory settings) "Enable/disable add command to history."),
-        ("help",           CommandDef (cmdHelp setSettingsCommands) "This help.")
+        ("historyFile",       CommandDef (cmdSetField $ makeSetter setSettings setHistoryFile settings) "Set histroy file."),
+        ("autoAddHistory",    CommandDef (cmdSetField $ makeSetter setSettings setAutoAddHistory settings) "Enable/disable add command to history."),
+        ("maxRecursionDepth", CommandDef (cmdSetField $ makeSetter setSettings setAutoAddHistory settings) "Set maximum recursion depth."),
+        ("help",              CommandDef (cmdHelp setSettingsCommands) "This help.")
     ]
 
 initialProgramState :: Settings -> ProgramState
@@ -128,6 +132,26 @@ runCommand cmds cmd state =
     where
         findMostSimilar cmdName = unwords $ (filter . isInfixOf) cmdName $ M.keys cmds
 
+cmdRun :: Command
+cmdRun args state = if null results
+    then return $ Left "Nothing happened..."
+    else do
+        mapM_ printResult results
+        return $ Right state
+    where
+        tree = read $ unwords args
+        results = applyTree (cddb state) tree (maxRecursionDepth $ settings state)
+        printResult result = do
+            putStr "Score:"
+            putStrLn (show $ accumulatedScore result)
+            putStrLn "Tree after run:"
+            putStrLn (show $ currentTree result)
+            putStrLn "Maximum recursion depth:"
+            putStrLn (show $ recursionDepth result)
+            putStrLn "Accumulated knowledge:"
+            putStrLn (show $ accumulatedKnowledge result)
+            return ()
+
 cmdDumpCDDB :: Command
 cmdDumpCDDB [] state = do
     putStrLn (show $ cddb state)
@@ -135,17 +159,16 @@ cmdDumpCDDB [] state = do
 cmdDumpCDDB _ _ = return $ Left "Too many arguments"
 
 cmdFilterRules :: Command
-cmdFilterRules args state = printAndUpdateCurrentRules (boundRuleDesc filters) (mapSnd fst) rulesFound state
+cmdFilterRules args state = printAndUpdateCurrentRules (boundRuleDesc tree) (mapSnd fst) rulesFound state
     where
-        filters = read $ unwords args
-        rulesFound = M.toList $ matchRulesAndFindPaths filters (rules $ cddb state)
+        tree = read $ unwords args
+        rulesFound = M.toList $ matchRulesAndFindPaths tree (rules $ cddb state)
 
 cmdFindRules :: Command
 cmdFindRules args state = printAndUpdateCurrentRules ruleDesc id rulesFound state
     where
         ids = mapMaybe fromString args
         rulesFound = mapMaybe (findCDDBRuleById $ cddb state) ids
---        rulesFound = M.toList $ rules $ cddb state
 
 printAndUpdateCurrentRules :: (a -> String) -> (a -> (RuleId, Rule)) -> [a] -> ProgramState -> IO (Either String ProgramState)
 printAndUpdateCurrentRules pf pre rulesFound state =  if null rulesFound
