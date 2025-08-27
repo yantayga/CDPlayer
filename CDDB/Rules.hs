@@ -13,8 +13,13 @@ import CDDB.Types
 import CDDB.Actions
 import CDDB.Tree.Filter
 import CDDB.Tree.Syntax
+import CDDB.Expression.Types
 
 type Rules = M.Map RuleId Rule
+
+type Locals = [VariableDef]
+
+type Conditions = [Expression]
 
 data Rule = Rule Comment Score FilterExpression Locals Conditions Actions deriving (Eq, Show, Generic, ToJSON, FromJSON)
 

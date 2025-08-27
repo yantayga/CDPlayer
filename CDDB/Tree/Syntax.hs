@@ -16,6 +16,8 @@ import CDDB.Types
 import CDDB.JSON
 
 type TagId = String
+type TreePos = Int
+type TreePath = [TreePos]
 
 data SyntacticTree = Tag TagId [SyntacticTree]
     | Word TagId String

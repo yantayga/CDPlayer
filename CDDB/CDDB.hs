@@ -13,6 +13,13 @@ import Data.UUID (UUID)
 import CDDB.Types
 import CDDB.Rules
 import CDDB.Templates
+import CDDB.Expression.Types
+
+type Knowledge = [Fact]
+
+data Fact = Fact Name FieldConstants deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+type FieldConstants = [Constant]
 
 data CDDB = CDDB {
         name :: Name,

@@ -11,6 +11,7 @@ import Text.ParserCombinators.ReadPrec as R
 import qualified Text.Read.Lex as L
 
 import CDDB.Types
+import CDDB.Expression.Types
 import CDDB.JSON
 
 type Actions = [Action]

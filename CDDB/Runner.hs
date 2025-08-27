@@ -5,7 +5,6 @@ module CDDB.Runner where
 
 import qualified Data.Map as M
 
-import CDDB.Types
 import CDDB.CDDB
 import CDDB.Rules
 import CDDB.Actions
@@ -85,8 +84,8 @@ removeNode :: SyntacticTree -> Constant -> SyntacticTree
 removeNode t (CTreePart n) = findAndRemoveNode n t
 removeNode t _ = t
 
-addFact :: Context -> Primitive -> Context
-addFact ctx p = ctx {accumulatedKnowledge = evaluateFact (variableStates ctx) p: accumulatedKnowledge ctx}
+--addFact :: Context -> Primitive -> Context
+--addFact ctx p = ctx {accumulatedKnowledge = evaluateFact (variableStates ctx) p: accumulatedKnowledge ctx}
 
 addLocals :: VariableStates -> Locals -> VariableStates
 addLocals = foldl addVariableDef
@@ -94,8 +93,8 @@ addLocals = foldl addVariableDef
 checkConditions :: VariableStates -> Conditions -> Bool
 checkConditions states = all ((== CBoolean True) . evaluateExpression states)
 
-evaluateFact :: VariableStates -> Primitive -> Fact
-evaluateFact states (Primitive name fieldVariables) = Fact name $ map (evaluateExpression states) fieldVariables
+--evaluateFact :: VariableStates -> Primitive -> Fact
+--evaluateFact states (Primitive name fieldVariables) = Fact name $ map (evaluateExpression states) fieldVariables
 
 logged :: LogLevel -> LogString -> Context -> Context
 logged ll l ctx = ctx {workingLog = addLogLine ll l (workingLog ctx)}
