@@ -11,6 +11,7 @@ import CDDB.Templates
 
 import Editor.Command.Types
 import Editor.Command.Common
+import Editor.Command.Errors
 import Editor.Command.Help
 
 templateCommands :: CommandMap
@@ -33,8 +34,8 @@ cmdShowTemplates _ _ = errTooManyArguments
 
 cmdAddTemplate :: Command
 cmdAddTemplate (n:fs) state = return $ Right state {cddb = addTemplatesToCDDB (cddb state) [PrimitiveTemplate n fs]}
-cmdAddTemplate _ _ = return $ Left "Not enough arguments"
+cmdAddTemplate _ _ = return errNotEnoughArguments
 
 cmdDeleteTemplate :: Command
-cmdDeleteTemplate [] _ = return $ Left "Not enough arguments"
+cmdDeleteTemplate [] _ = return errNotEnoughArguments
 cmdDeleteTemplate ns state = return $ Right state {cddb = deleteTemplatesFromCDDB (cddb state) ns}

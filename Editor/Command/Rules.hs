@@ -18,6 +18,7 @@ import CDDB.Utils
 
 import Editor.Command.Types
 import Editor.Command.Common
+import Editor.Command.Errors
 import Editor.Command.Help
 import Editor.Command.Actions
 
@@ -52,13 +53,13 @@ cmdShowRules [] state = do
         printFn (idx, r) = do
             print idx
             putStrLn $ ruleDesc r
-cmdShowRules _ _ = errTooManyArguments
+cmdShowRules _ _ = return errTooManyArguments
 
 cmdAddRule :: Command
 cmdAddRule [] state = do
     Just newUUID <- nextUUID
     return $ Right state {currentRules = (newUUID, newRule) : currentRules state}
-cmdAddRule _ _ = errTooManyArguments
+cmdAddRule _ _ = return errTooManyArguments
 
 cmdDeleteRules :: FilterRules -> Command
 cmdDeleteRules f args state = case f args (currentRules state) of
@@ -85,17 +86,16 @@ cmdRenewRules f args state = case f args (currentRules state) of
 filterByN :: FilterRules
 filterByN [arg] ls = case readEither arg of
     Left err -> Left err
-    Right n -> if n < 0 || n >= length ls then
-        Left "Index out of range"
+    Right n -> if n < 0 || n >= length ls then errOutOfRange
         else Right (crsB ++ drop1 crsA, [head crsA])
         where
             (crsB, crsA) = splitAt n ls
-filterByN [] _ = Left "Not enough arguments"
-filterByN _ _ = Left "Too many arguments"
+filterByN [] _ = errNotEnoughArguments
+filterByN _ _ = errTooManyArguments
 
 useAll :: FilterRules
 useAll [] ls = Right (ls, [])
-useAll _ _ = Left "Too many arguments"
+useAll _ _ = errTooManyArguments
 
 cmdFilterRules :: Command
 cmdFilterRules args state =  case readEither (unwords args) of

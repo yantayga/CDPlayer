@@ -10,6 +10,7 @@ import CDDB.Rules
 import CDDB.Utils
 
 import Editor.Command.Types
+import Editor.Command.Errors
 import Editor.Command.Help
 
 actionCommands :: CommandMap
@@ -28,7 +29,7 @@ cmdAddAction (arg:args) state =
         (_, Left err) -> return $ Left err
     where
         addAction n a (ruleId, Rule comment score filterExpression locals conditions actions) = (ruleId, Rule comment score filterExpression locals conditions (insertInNthPosition n a actions))
-cmdAddAction [] _ = return $ Left "Not enough arguments"
+cmdAddAction [] _ = return errNotEnoughArguments
 
 cmdDeleteActio :: Command
 cmdDeleteActio [arg] state  = 
@@ -37,8 +38,8 @@ cmdDeleteActio [arg] state  =
         Left err -> return $ Left err
     where
         deleteAction n (ruleId, Rule comment score filterExpression locals conditions actions) = (ruleId, Rule comment score filterExpression locals conditions (deleteNthElement n actions))
-cmdDeleteActio [] _ = return $ Left "Not enough arguments"
-cmdDeleteActio _ _ = return $ Left "Too many arguments"
+cmdDeleteActio [] _ = return errNotEnoughArguments
+cmdDeleteActio _ _ = return errTooManyArguments
 
 cmdUpdateAction :: Command
 cmdUpdateAction (arg:args) state  =
@@ -48,4 +49,4 @@ cmdUpdateAction (arg:args) state  =
         (_, Left err) -> return $ Left err
     where
         replaceAction n a (ruleId, Rule comment score filterExpression locals conditions actions) = (ruleId, Rule comment score filterExpression locals conditions (updateNthElement n a actions))
-cmdUpdateAction [] _ = return $ Left "Not enough arguments"
+cmdUpdateAction [] _ = return errNotEnoughArguments

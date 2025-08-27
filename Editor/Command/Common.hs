@@ -11,6 +11,7 @@ import CDDB.CDDB
 import CDDB.Rules
 
 import Editor.Command.Types
+import Editor.Command.Errors
 import Editor.Command.Settings
 
 type FilterRules = Arguments -> [(RuleId, Rule)] -> Either String ([(RuleId, Rule)], [(RuleId, Rule)])
@@ -27,7 +28,7 @@ runRuleCommand f cmds args state =  case f args (currentRules state) of
 runCommand :: CommandMap -> Command
 runCommand cmds args state =
     case args of
-        [] -> return $ Left "Empty command"
+        [] -> return errNotEnoughArguments
         (cmdName: args) ->
             case M.lookup cmdName cmds of
                 Nothing -> return $ Left $ "Command '" ++ cmdName ++ "' not found. Possible variants: " ++ findMostSimilar cmdName
@@ -37,15 +38,15 @@ runCommand cmds args state =
 
 cmdGetField :: Show b => (ProgramState -> b) -> Command
 cmdGetField accessor [] state = return $ Left $ show $ accessor state
-cmdGetField _ _ _ = errTooManyArguments
+cmdGetField _ _ _ = return errTooManyArguments
 
 cmdSetField :: Read b => (ProgramState -> b -> ProgramState) -> Command
 cmdSetField setter [val] state = let v = readEither val in
         case v of
                 Left err -> return $ Left err
                 Right a -> return $ Right $ setter state a
-cmdSetField _ [] _ = errTooManyArguments
-cmdSetField _ _ _ = return $ Left "Too many arguments"
+cmdSetField _ [] _ = return errTooManyArguments
+cmdSetField _ _ _ = return errTooManyArguments
 
 makeGetter :: (a -> b) -> (b -> c) -> (a -> c)
 makeGetter = flip (.)
@@ -56,5 +57,3 @@ makeSetter outer inner accessor a c = outer a $ inner (accessor a) c
 initialProgramState :: Settings -> ProgramState
 initialProgramState settings = ProgramState {settings = settings, cddb = emptyCDDB, currentRules = [], isNotSaved = True, currentTemplate = Nothing}
 
-errTooManyArguments :: IO (Either String ProgramState)
-errTooManyArguments = return $ Left "Too many arguments."
