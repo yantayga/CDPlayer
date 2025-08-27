@@ -14,6 +14,7 @@ import CDDB.Types
 import CDDB.Rules
 import CDDB.Templates
 import CDDB.Expression.Types
+import CDDB.Expression.Constants
 
 type Knowledge = [Fact]
 

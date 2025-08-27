@@ -14,6 +14,7 @@ import CDDB.Actions
 import CDDB.Tree.Filter
 import CDDB.Tree.Syntax
 import CDDB.Expression.Types
+import CDDB.Expression.Expression
 
 type Rules = M.Map RuleId Rule
 

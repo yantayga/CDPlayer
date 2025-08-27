@@ -19,7 +19,7 @@ instance Show UnOp where
     show UnaryMinus = "-"
 
 instance Read UnOp where
-    readPrec = choice [readIsNull, readIsNotNull, readUnaryMinus  ]
+    readPrec = readIsNull <++ readIsNotNull <++ readUnaryMinus
         where
             readIsNull = do
                 L.Ident "isNull" <- lexP
