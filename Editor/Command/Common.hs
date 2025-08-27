@@ -3,12 +3,37 @@
 
 module Editor.Command.Common where
 
+import qualified Data.Map as M
+import Data.List (isInfixOf)
 import Text.Read (readEither)
 
 import CDDB.CDDB
+import CDDB.Rules
 
 import Editor.Command.Types
 import Editor.Command.Settings
+
+type FilterRules = Arguments -> [(RuleId, Rule)] -> Either String ([(RuleId, Rule)], [(RuleId, Rule)])
+
+runRuleCommand :: FilterRules -> CommandMap -> Command
+runRuleCommand f cmds args state =  case f args (currentRules state) of
+    Left err -> return $ Left err
+    Right (passed, used) -> do
+        res <- runCommand cmds args state {currentRules = used}
+        case res of
+            Left err -> return $ Left err
+            Right newState -> return $ Right newState {currentRules = passed ++ currentRules newState}
+
+runCommand :: CommandMap -> Command
+runCommand cmds args state =
+    case args of
+        [] -> return $ Left "Empty command"
+        (cmdName: args) ->
+            case M.lookup cmdName cmds of
+                Nothing -> return $ Left $ "Command '" ++ cmdName ++ "' not found. Possible variants: " ++ findMostSimilar cmdName
+                Just (CommandDef fn _) -> fn args state
+    where
+        findMostSimilar cmdName = unwords $ (filter . isInfixOf) cmdName $ M.keys cmds
 
 cmdGetField :: Show b => (ProgramState -> b) -> Command
 cmdGetField accessor [] state = return $ Left $ show $ accessor state

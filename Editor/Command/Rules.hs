@@ -19,8 +19,7 @@ import CDDB.Utils
 import Editor.Command.Types
 import Editor.Command.Common
 import Editor.Command.Help
-
-type FilterRules = Arguments -> [(RuleId, Rule)] -> Either String ([(RuleId, Rule)], [(RuleId, Rule)])
+import Editor.Command.Actions
 
 ruleCommands :: CommandMap
 ruleCommands = M.fromList [
@@ -29,6 +28,7 @@ ruleCommands = M.fromList [
         ("write",   CommandDef (cmdWriteRules filterByN) "Add/update rule #arg to cddb."),
         ("renew",   CommandDef (cmdRenewRules filterByN) "Regenerate rule #arg ids."),
         ("delete",  CommandDef (cmdDeleteRules filterByN) "Delete rule #arg from the current rules."),
+        ("action",  CommandDef (runRuleCommand filterByN actionCommands) "Manipulate actions."),
         ("wipe",    CommandDef (cmdWipeRules filterByN) "Delete rule #arg with id from CDDB.")
     ]
 
@@ -40,6 +40,7 @@ rulesCommands = M.fromList [
         ("write",   CommandDef (cmdWriteRules useAll)"Add/update current rules to cddb."),
         ("renew",   CommandDef (cmdRenewRules useAll) "Regenerate rules ids."),
         ("find",    CommandDef cmdFindRules "Find rules by ids."),
+        ("action",  CommandDef (runRuleCommand useAll actionCommands) "Manipulate actions."),
         ("filter",  CommandDef cmdFilterRules "Find rules by syntactic tree.")
     ]
 
@@ -82,14 +83,13 @@ cmdRenewRules f args state = case f args (currentRules state) of
         return $ Right state {currentRules = passed ++ zip (map fromJust uuids) (map snd used)}
 
 filterByN :: FilterRules
-filterByN [arg] ls = let v = readEither arg in
-    case v of
-        Left err -> Left err
-        Right n -> if n < 0 || n >= length ls then
-            Left "Index put of range"
-            else Right (crsB ++ drop1 crsA, [head crsA])
-            where
-                (crsB, crsA) = splitAt n ls
+filterByN [arg] ls = case readEither arg of
+    Left err -> Left err
+    Right n -> if n < 0 || n >= length ls then
+        Left "Index out of range"
+        else Right (crsB ++ drop1 crsA, [head crsA])
+        where
+            (crsB, crsA) = splitAt n ls
 filterByN [] _ = Left "Not enough arguments"
 filterByN _ _ = Left "Too many arguments"
 

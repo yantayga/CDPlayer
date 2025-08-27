@@ -4,7 +4,6 @@
 module Editor.Commands (runMainCommand, initialProgramState, isNotSaved, settings)  where
 
 import qualified Data.Map as M
-import Data.List (isInfixOf)
 import Text.Read (readEither)
 
 import Editor.Command.Settings
@@ -67,22 +66,10 @@ setSettingsCommands = M.fromList [
 runMainCommand :: Command
 runMainCommand = runCommand commands
 
-runCommand :: CommandMap -> Command
-runCommand cmds cmd state =
-    case cmd of
-        [] -> return $ Left "Empty command"
-        (cmdName: args) ->
-            case M.lookup cmdName cmds of
-                Nothing -> return $ Left $ "Command '" ++ cmdName ++ "' not found. Possible variants: " ++ findMostSimilar cmdName
-                Just (CommandDef fn _) -> fn args state
-    where
-        findMostSimilar cmdName = unwords $ (filter . isInfixOf) cmdName $ M.keys cmds
-
 cmdSetTree :: Command
-cmdSetTree args state = let tree = (readEither $ unwords args) in
-        case tree of
-                Left err -> return $ Left err
-                Right a -> return $ Right $ state {settings = (settings state) {cddbTree = Just a}}
+cmdSetTree args state = case readEither (unwords args) of
+    Left err -> return $ Left err
+    Right a -> return $ Right $ state {settings = (settings state) {cddbTree = Just a}}
 
 setSettings :: ProgramState -> Settings -> ProgramState
 setSettings state settings = state {settings = settings}

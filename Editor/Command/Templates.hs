@@ -32,7 +32,7 @@ cmdShowTemplates [] state = do
 cmdShowTemplates _ _ = errTooManyArguments
 
 cmdAddTemplate :: Command
-cmdAddTemplate (n:fs) state = return $ Right state {cddb = addTemplatesToCDDB (cddb state) [(PrimitiveTemplate n fs)]}
+cmdAddTemplate (n:fs) state = return $ Right state {cddb = addTemplatesToCDDB (cddb state) [PrimitiveTemplate n fs]}
 cmdAddTemplate _ _ = return $ Left "Not enough arguments"
 
 cmdDeleteTemplate :: Command
