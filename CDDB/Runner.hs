@@ -4,13 +4,18 @@
 module CDDB.Runner where
 
 import qualified Data.Map as M
+import Data.Maybe (catMaybes)
 
+import CDDB.Types
 import CDDB.CDDB
 import CDDB.Rules
 import CDDB.Actions
+import CDDB.Templates
 import CDDB.Expression.Types
 import CDDB.Expression.Eval
 import CDDB.Expression.Constants
+import CDDB.Expression.Expression
+import CDDB.Expression.VariableDefs
 import CDDB.Tree.Syntax
 import CDDB.Logging
 import CDDB.Utils
@@ -42,7 +47,7 @@ applyTreeWithContext db ctx mrd = finished ++ deep ++ concatMap subApply shallow
 applyTreeOnce :: CDDB -> Context-> [Context]
 applyTreeOnce db ctx = map evaluateRuleAt $ matchRules (currentTree ctx) db
     where
-        evaluateRuleAt (r, vs) = evaluateRule ctx {variableStates = vs} r
+        evaluateRuleAt (r, vs) = evaluateRule (templates db) ctx {variableStates = vs} r
 
 resetContext :: Context -> Context
 resetContext ctx = ctx {variableStates = emptyVariableStates, state = NonFinished, recursionDepth = 1 + recursionDepth ctx}
@@ -61,22 +66,24 @@ emptyContext t = Context {
 matchRules :: SyntacticTree -> CDDB -> [(Rule, VariableStates)]
 matchRules t cddb = map (mapSnd (M.map CTreePart)) $ M.elems $ matchRulesAndFindPaths t $ rules cddb
 
-evaluateRule :: Context -> Rule -> Context
-evaluateRule ctx (Rule _ ruleScore _ locals conditions actions) =
+evaluateRule :: PrimitiveTemplates -> Context -> Rule -> Context
+evaluateRule templates ctx (Rule _ ruleScore _ locals conditions actions) =
     if applicable
-        then doActions (ctx {variableStates = states, accumulatedScore = accumulatedScore ctx * ruleScore}) actions
-        else ctx
+        then doActions templates (ctx {variableStates = states, accumulatedScore = accumulatedScore ctx * ruleScore}) actions
+        else logged Debug "Rule has not passed conditions." ctx
     where
         states   = addLocals (variableStates ctx) locals
         applicable = checkConditions states conditions
 
-doActions :: Context -> Actions -> Context
-doActions = foldl doAction
+doActions :: PrimitiveTemplates -> Context -> Actions -> Context
+doActions templates = foldl (doAction templates)
 
-doAction :: Context -> Action -> Context
-doAction ctx Stop = ctx {state = Finished}
-doAction ctx (AddFact name fcs) = logged Debug "Actions command is not implemented yet." ctx -- addFact ctx p
-doAction ctx (Delete as) = ctx {currentTree = removeNodes (currentTree ctx) $ map (variableStates ctx M.!) as} -- TODO: M.! can fail! use mapMaybe
+doAction :: PrimitiveTemplates -> Context -> Action -> Context
+doAction _ ctx Stop = logged Debug "Stop." ctx {state = Finished}
+doAction templates ctx (AddFact name fieldVariables) = case findTemplate templates name of
+        Nothing -> logged Warning ("Add fact failed: template " ++ name ++ "not found.") ctx
+        Just template -> addFact ctx template fieldVariables
+doAction _ ctx (Delete names) = ctx {currentTree = removeNodes (currentTree ctx) $ map (variableStates ctx M.!) names} -- TODO: M.! can fail! use mapMaybe
 
 removeNodes :: SyntacticTree -> [Constant] -> SyntacticTree
 removeNodes = foldl removeNode
@@ -85,17 +92,23 @@ removeNode :: SyntacticTree -> Constant -> SyntacticTree
 removeNode t (CTreePart n) = findAndRemoveNode n t
 removeNode t _ = t
 
---addFact :: Context -> Primitive -> Context
---addFact ctx p = ctx {accumulatedKnowledge = evaluateFact (variableStates ctx) p: accumulatedKnowledge ctx}
+addFact :: Context -> PrimitiveTemplate -> VariableDefs -> Context
+addFact ctx (PrimitiveTemplate name fieldNames) fvs = if Nothing `elem` maybeFs
+    then logged Warning ("Add fact failed: variables " ++ show notFound ++ " not found in template" ++ name ++ ".") ctx
+    else ctx {accumulatedKnowledge = evaluateFact (variableStates ctx) name (catMaybes maybeFs): accumulatedKnowledge ctx}
+    where
+         maybeFs = map (flip lookup $ map unpackDef fvs) fieldNames
+         unpackDef (VariableDef n ex) = (n, ex)
+         notFound = map snd $ filter ((== Nothing) . fst) $ zip maybeFs fieldNames
+
+evaluateFact :: VariableStates -> Name -> [Expression] -> Fact
+evaluateFact states name fieldVariables = Fact name $ map (evaluateExpression states) fieldVariables
 
 addLocals :: VariableStates -> Locals -> VariableStates
 addLocals = foldl addVariableDef
 
 checkConditions :: VariableStates -> Conditions -> Bool
 checkConditions states = all ((== CBoolean True) . evaluateExpression states)
-
---evaluateFact :: VariableStates -> Primitive -> Fact
---evaluateFact states (Primitive name fieldVariables) = Fact name $ map (evaluateExpression states) fieldVariables
 
 logged :: LogLevel -> LogString -> Context -> Context
 logged ll l ctx = ctx {workingLog = addLogLine ll l (workingLog ctx)}

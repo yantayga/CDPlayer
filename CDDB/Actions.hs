@@ -12,6 +12,8 @@ import qualified Text.Read.Lex as L
 
 import CDDB.Types
 import CDDB.Expression.Types
+import CDDB.Expression.Expression
+import CDDB.Expression.VariableDefs
 import CDDB.Parser
 import CDDB.JSON
 
@@ -19,7 +21,7 @@ type Actions = [Action]
 
 data Action = Stop
     | Delete [VariableName]
-    | AddFact Name FieldVariables
+    | AddFact Name VariableDefs
     deriving (Eq, Generic)
 
 instance ToJSON Action where
@@ -32,7 +34,7 @@ instance Show Action where
     show :: Action -> String
     show Stop = "stop"
     show (Delete vns) = "delete " ++ unwords vns
-    show (AddFact name fvs) = "addFact " ++ name
+    show (AddFact name fvs) = "addFact " ++ name ++ " " ++ show fvs
 
 instance Read Action where
     readPrec = choice [readStop, readDelete, readAddFact]
@@ -47,5 +49,6 @@ instance Read Action where
             readAddFact = do
                 expectP (L.Ident "addFact")
                 L.Ident s <- lexP
-                return $ AddFact s []
+                es <- readListPrec
+                return $ AddFact s es
 

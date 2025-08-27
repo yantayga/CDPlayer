@@ -13,12 +13,12 @@ import CDDB.Types
 import CDDB.Actions
 import CDDB.Tree.Filter
 import CDDB.Tree.Syntax
-import CDDB.Expression.Types
+import CDDB.Expression.VariableDefs
 import CDDB.Expression.Expression
 
 type Rules = M.Map RuleId Rule
 
-type Locals = [VariableDef]
+type Locals = VariableDefs
 
 type Conditions = [Expression]
 
@@ -50,12 +50,14 @@ matchRulesAndFindPaths :: SyntacticTree -> Rules -> M.Map RuleId (Rule, Variable
 matchRulesAndFindPaths t = M.mapMaybe (matchRuleAndFindPaths t)
 
 ruleDesc :: (RuleId, Rule) -> String
-ruleDesc (ruleId, Rule comment score filterExpression _ _ actions) =
-    "Id: " ++ show ruleId ++ "\n" ++
-    "\tComment: " ++ show comment ++ "\n" ++
-    "\tScore: " ++ show score ++ "\n" ++
-    "\tFilterExpression: " ++ show filterExpression ++ "\n" ++
-    "\tActions: " ++ intercalate "\n\t\t" (map show actions) ++ "\n"
+ruleDesc (ruleId, Rule comment score filterExpression locals conditions actions) =
+    "Rule Id: " ++ show ruleId ++ 
+    "\n\tComment: " ++ show comment ++
+    "\n\tScore: " ++ show score ++
+    "\n\tFilterExpression: " ++ show filterExpression ++ 
+    "\n\tLocals: " ++ intercalate "\n\t\t" (map show locals) ++
+    "\n\tConditions: " ++ intercalate "\n\t\t" (map show conditions) ++
+    "\n\tActions: " ++ intercalate "\n\t\t" (map show actions) ++ "\n"
 
 boundRuleDesc :: SyntacticTree -> (RuleId, (Rule, VariablePaths)) -> String
 boundRuleDesc t (ruleId, (r, vp)) = ruleDesc (ruleId, r) ++ "\n\tVariable bounds:\n" ++ concat (M.mapWithKey (treePathDesc t) vp)

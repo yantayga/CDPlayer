@@ -15,9 +15,7 @@ type PrimitiveTemplates = M.Map Name FieldDefinitions
 
 data PrimitiveTemplate = PrimitiveTemplate Name FieldDefinitions
 
-type FieldDefinitions = [Name]
-
-type FieldDefinition = String
+type FieldDefinitions = [VariableName]
 
 addTemplate :: PrimitiveTemplate -> PrimitiveTemplates -> PrimitiveTemplates
 addTemplate (PrimitiveTemplate t fs) = M.insert t fs
@@ -40,3 +38,6 @@ templateDesc (PrimitiveTemplate t fs) = "Name: " ++ t ++ "\nFields: " ++ unwords
 
 unpackTemplates :: PrimitiveTemplates -> [PrimitiveTemplate]
 unpackTemplates = map (uncurry PrimitiveTemplate) . M.toList
+
+findTemplate :: PrimitiveTemplates -> Name -> Maybe PrimitiveTemplate
+findTemplate ts name = M.lookup name ts >>= \t -> return $ PrimitiveTemplate name t

@@ -11,10 +11,11 @@ import qualified Data.Map as M
 
 import CDDB.Types
 import CDDB.Expression.Types
-import CDDB.Expression.UnOps    
-import CDDB.Expression.BinOps    
-import CDDB.Expression.Constants    
-import CDDB.Expression.Expression    
+import CDDB.Expression.UnOps
+import CDDB.Expression.BinOps
+import CDDB.Expression.Constants
+import CDDB.Expression.Expression
+import CDDB.Expression.VariableDefs
 import CDDB.Tree.Syntax
 
 emptyVariableStates :: VariableStates
