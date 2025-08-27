@@ -19,6 +19,8 @@ import CDDB.Utils
 import Editor.Command.Types
 import Editor.Command.Common
 
+type FilterRules = Arguments -> [(RuleId, Rule)] -> Either String ([(RuleId, Rule)], [(RuleId, Rule)])
+
 cmdShowRules :: Command
 cmdShowRules [] state = do
     mapM_ printFn $ zipFrom 0 (currentRules state)
@@ -29,69 +31,49 @@ cmdShowRules [] state = do
             putStrLn $ ruleDesc r
 cmdShowRules _ _ = errTooManyArguments
 
-cmdNewRule :: Command
-cmdNewRule [] state = do
-    Just newUUID <- nextUUID
-    return $ Right state {currentRules = [(newUUID, newRule)]}
-cmdNewRule _ _ = errTooManyArguments
-
-cmdClearRules :: Command
-cmdClearRules [] state = return $ Right state {currentRules = []}
-cmdClearRules _ _ = errTooManyArguments
-
 cmdAddRule :: Command
 cmdAddRule [] state = do
     Just newUUID <- nextUUID
     return $ Right state {currentRules = (newUUID, newRule) : currentRules state}
 cmdAddRule _ _ = errTooManyArguments
 
-cmdDeleteRule :: Command
-cmdDeleteRule args state = return $ Right state {currentRules = filter isIdInIds $ currentRules state}
-    where
-        isIdInIds (ruleId, _) = elem ruleId $ mapMaybe fromString args
+cmdDeleteRules :: FilterRules -> Command
+cmdDeleteRules f args state = case f args (currentRules state) of
+    Left err -> return $ Left err
+    Right (passed, _) -> return $ Right state {currentRules = passed}
 
-cmdWipeRule :: Command
-cmdWipeRule args state = return $ Right state {cddb = deleteRulesToCDDB (cddb state) ids}
-    where
-        ids = mapMaybe fromString args
+cmdWipeRules :: FilterRules -> Command
+cmdWipeRules f args state = case f args (currentRules state) of
+    Left err -> return $ Left err
+    Right (passed, used) -> return $ Right state {cddb = deleteRulesToCDDB (cddb state) $ map fst used, currentRules = passed}
 
-cmdWriteRules :: Command
-cmdWriteRules [] state = return $ Right state {cddb = addRulesToCDDB (cddb state) (currentRules state)}
-cmdWriteRules _ _ = errTooManyArguments
+cmdWriteRules :: FilterRules -> Command
+cmdWriteRules f args state = case f args (currentRules state) of
+    Left err -> return $ Left err
+    Right (_, used) -> return $ Right state {cddb = addRulesToCDDB (cddb state) used}
 
-cmdWriteRule :: Command
-cmdWriteRule [arg] state = let v = readEither arg in
+cmdRenewRules :: FilterRules -> Command
+cmdRenewRules f args state = case f args (currentRules state) of
+    Left err -> return $ Left err
+    Right (passed, used) -> do
+        uuids <- replicateM (length used) nextUUID
+        return $ Right state {currentRules = passed ++ zip (map fromJust uuids) (map snd used)}
+
+filterByN :: FilterRules
+filterByN [arg] ls = let v = readEither arg in
     case v of
-        Left err -> return $ Left err
-        Right ruleN -> if ruleN < 0 || ruleN >= length crs
-            then return $ Left "Index out of range"
-            else return $ Right state {cddb = addRulesToCDDB (cddb state) [crs !! ruleN]}
-    where
-        crs = currentRules state
-cmdWriteRule [] _ = return $ Left "Not enough arguments"
-cmdWriteRule _ _ = errTooManyArguments
-
-cmdRenewRules :: Command
-cmdRenewRules [] state = do
-    uuids <- replicateM (length crs) nextUUID
-    return $ Right state {currentRules = zip (map fromJust uuids) crs}
-    where
-        crs = map snd $ currentRules state
-cmdRenewRules _ _ = errTooManyArguments
-
-cmdRenewRule :: Command
-cmdRenewRule [arg] state = let v = readEither arg in
-    case v of
-        Left err -> return $ Left err
-        Right ruleN -> if ruleN < 0 || ruleN >= length (currentRules state)
-            then return $ Left "Index out of range"
-            else do
-                Just uuid <- nextUUID
-                return $ Right state {currentRules = crsB ++ [(uuid, snd $ head crsA)] ++ drop1 crsA}
+        Left err -> Left err
+        Right n -> if n < 0 || n >= length ls then
+            Left "Index put of range"
+            else Right (crsB ++ drop1 crsA, [head crsA])
             where
-                (crsB, crsA) = splitAt ruleN $ currentRules state
-cmdRenewRule [] _ = return $ Left "Not enough arguments"
-cmdRenewRule _ _ = errTooManyArguments
+                (crsB, crsA) = splitAt n ls
+filterByN [] _ = Left "Not enough arguments"
+filterByN _ _ = Left "Too many arguments"
+
+useAll :: FilterRules
+useAll [] ls = Right (ls, [])
+useAll _ _ = Left "Too many arguments"
 
 cmdFilterRules :: Command
 cmdFilterRules args state = printAndUpdateCurrentRules (boundRuleDesc tree) (mapSnd fst) rulesFound state

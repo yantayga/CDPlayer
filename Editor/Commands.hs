@@ -34,21 +34,20 @@ commands = M.fromList [
 ruleCommands :: CommandMap
 ruleCommands = M.fromList [
         ("help",    CommandDef (cmdHelp ruleCommands) "This help."),
-        ("write",   CommandDef cmdWriteRule "Add/update rule to cddb."),
-        ("renew",   CommandDef cmdRenewRule "Regenerate rule ids."),
-        ("delete",  CommandDef cmdDeleteRule "Delete rule from the current rules"),
-        ("wipe",    CommandDef cmdWipeRule "Delete rule with id from CDDB.")
+        ("add",     CommandDef cmdAddRule "Add rule to current rules."),
+        ("write",   CommandDef (cmdWriteRules filterByN) "Add/update rule #arg to cddb."),
+        ("renew",   CommandDef (cmdRenewRules filterByN) "Regenerate rule #arg ids."),
+        ("delete",  CommandDef (cmdDeleteRules filterByN) "Delete rule #arg from the current rules"),
+        ("wipe",    CommandDef (cmdWipeRules filterByN) "Delete rule #arg with id from CDDB.")
     ]
 
 rulesCommands :: CommandMap
 rulesCommands = M.fromList [
         ("help",    CommandDef (cmdHelp rulesCommands) "This help."),
         ("show",    CommandDef cmdShowRules "Show current rules."),
-        ("clear",   CommandDef cmdClearRules "Clear current rules."),
-        ("new",     CommandDef cmdNewRule "Reset current rules to a new one."),
-        ("add",     CommandDef cmdAddRule "Add rule to current rules."),
-        ("write",   CommandDef cmdWriteRules "Add/update current rules to cddb."),
-        ("renew",   CommandDef cmdRenewRules "Regenerate rules ids."),
+        ("clear",   CommandDef (cmdDeleteRules useAll) "Clear current rules."),
+        ("write",   CommandDef (cmdWriteRules useAll)"Add/update current rules to cddb."),
+        ("renew",   CommandDef (cmdRenewRules useAll) "Regenerate rules ids."),
         ("find",    CommandDef cmdFindRules "Find rules by ids."),
         ("filter",  CommandDef cmdFilterRules "Find rules by syntactic tree.")
     ]
