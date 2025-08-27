@@ -22,5 +22,6 @@ cabal.project.local~
 .HTF/
 .ghc.environment.*
 editorSettings.json
+.editor_state.json
 .cddb_history
 *.cddb

@@ -3,6 +3,7 @@
 
 module Editor.Command.CDDB where
 
+import qualified Data.Map as M
 import Data.Time (UTCTime(..), getCurrentTime)
 import Data.Either.Extra (maybeToEither)
 import Data.Aeson (encode, decode, toJSON)
@@ -14,7 +15,27 @@ import CDDB.CDDB
 
 import Editor.Command.Types
 import Editor.Command.Common
+import Editor.Command.Help
 import Editor.Command.Settings
+
+getCDDBCommands :: CommandMap
+getCDDBCommands = M.fromList [
+        ("help",     CommandDef (cmdHelp getCDDBCommands) "This help."),
+        ("name",     CommandDef (cmdGetField $ makeGetter cddb name) "Get database name."),
+        ("comment",  CommandDef (cmdGetField $ makeGetter cddb comment) "Get database comment."),
+        ("version",  CommandDef (cmdGetField $ makeGetter cddb version) "Get database version."),
+        ("date",     CommandDef (cmdGetField $ makeGetter cddb date) "Get database date."),
+        ("filename", CommandDef (cmdGetField $ makeGetter settings cddbFileName) "Get database filename.")
+    ]
+
+setCDDBCommands :: CommandMap
+setCDDBCommands = M.fromList [
+        ("help",    CommandDef (cmdHelp setCDDBCommands) "This help."),
+        ("name",    CommandDef (cmdSetField $ makeSetter setCDDB setName cddb) "Set database name."),
+        ("comment", CommandDef (cmdSetField $ makeSetter setCDDB setComment cddb) "Set database comment."),
+        ("version", CommandDef (cmdSetField $ makeSetter setCDDB setVersion cddb) "Set database version."),
+        ("date",    CommandDef (cmdSetField $ makeSetter setCDDB setDate cddb) "Set database date.")
+    ]
 
 -- CDDB Fields setters
 setName :: CDDB -> String -> CDDB

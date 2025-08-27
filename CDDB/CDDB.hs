@@ -42,11 +42,17 @@ emptyCDDB = CDDB {
         kn = []
     }
 
+addTemplatesToCDDB :: CDDB -> [PrimitiveTemplate] -> CDDB
+addTemplatesToCDDB cddb newTemplates = cddb {templates = foldl (flip addTemplate) (templates cddb) newTemplates}
+
+deleteTemplatesFromCDDB :: CDDB -> [Name] -> CDDB
+deleteTemplatesFromCDDB cddb ns = cddb {templates = deleteTemplates (templates cddb) ns}
+
 findCDDBRuleById :: CDDB -> UUID -> Maybe (RuleId, Rule)
 findCDDBRuleById cddb = findRuleById (rules cddb)
 
 addRulesToCDDB :: CDDB -> [(RuleId, Rule)] -> CDDB
 addRulesToCDDB cddb newRules = cddb {rules = addRules (rules cddb) newRules}
 
-deleteRulesToCDDB :: CDDB -> [RuleId] -> CDDB
-deleteRulesToCDDB cddb ids = cddb {rules = deleteRules (rules cddb) ids}
+deleteRulesFromCDDB :: CDDB -> [RuleId] -> CDDB
+deleteRulesFromCDDB cddb ids = cddb {rules = deleteRules (rules cddb) ids}

@@ -12,6 +12,7 @@ import qualified Text.Read.Lex as L
 
 import CDDB.Types
 import CDDB.Expression.Types
+import CDDB.Parser
 import CDDB.JSON
 
 type Actions = [Action]
@@ -48,8 +49,3 @@ instance Read Action where
                 L.Ident s <- lexP
                 return $ AddFact s []
 
-spaceList :: ReadPrec [String]
-spaceList = do
-    L.Ident x  <- lexP
-    xs <- spaceList +++ return []
-    return (x:xs)

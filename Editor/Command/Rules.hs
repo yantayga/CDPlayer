@@ -18,8 +18,30 @@ import CDDB.Utils
 
 import Editor.Command.Types
 import Editor.Command.Common
+import Editor.Command.Help
 
 type FilterRules = Arguments -> [(RuleId, Rule)] -> Either String ([(RuleId, Rule)], [(RuleId, Rule)])
+
+ruleCommands :: CommandMap
+ruleCommands = M.fromList [
+        ("help",    CommandDef (cmdHelp ruleCommands) "This help."),
+        ("add",     CommandDef cmdAddRule "Add rule to current rules."),
+        ("write",   CommandDef (cmdWriteRules filterByN) "Add/update rule #arg to cddb."),
+        ("renew",   CommandDef (cmdRenewRules filterByN) "Regenerate rule #arg ids."),
+        ("delete",  CommandDef (cmdDeleteRules filterByN) "Delete rule #arg from the current rules."),
+        ("wipe",    CommandDef (cmdWipeRules filterByN) "Delete rule #arg with id from CDDB.")
+    ]
+
+rulesCommands :: CommandMap
+rulesCommands = M.fromList [
+        ("help",    CommandDef (cmdHelp rulesCommands) "This help."),
+        ("show",    CommandDef cmdShowRules "Show current rules."),
+        ("clear",   CommandDef (cmdDeleteRules useAll) "Clear current rules."),
+        ("write",   CommandDef (cmdWriteRules useAll)"Add/update current rules to cddb."),
+        ("renew",   CommandDef (cmdRenewRules useAll) "Regenerate rules ids."),
+        ("find",    CommandDef cmdFindRules "Find rules by ids."),
+        ("filter",  CommandDef cmdFilterRules "Find rules by syntactic tree.")
+    ]
 
 cmdShowRules :: Command
 cmdShowRules [] state = do
@@ -45,7 +67,7 @@ cmdDeleteRules f args state = case f args (currentRules state) of
 cmdWipeRules :: FilterRules -> Command
 cmdWipeRules f args state = case f args (currentRules state) of
     Left err -> return $ Left err
-    Right (passed, used) -> return $ Right state {cddb = deleteRulesToCDDB (cddb state) $ map fst used, currentRules = passed}
+    Right (passed, used) -> return $ Right state {cddb = deleteRulesFromCDDB (cddb state) $ map fst used, currentRules = passed}
 
 cmdWriteRules :: FilterRules -> Command
 cmdWriteRules f args state = case f args (currentRules state) of

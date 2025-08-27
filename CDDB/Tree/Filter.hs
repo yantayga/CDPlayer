@@ -17,6 +17,7 @@ import qualified Text.Read.Lex as L
 
 import CDDB.Types
 import CDDB.Tree.Syntax
+import CDDB.Parser
 import CDDB.JSON
 
 data FilterExpressionT a = Asterisk a
@@ -86,23 +87,6 @@ readVariable = readJust +++ return Nothing
             L.Ident vn <- lexP
             expectP (L.Symbol ":")
             return $ Just vn
-
--- Taken form GHC.Read 'list'
-cbList :: ReadPrec a -> ReadPrec [a]
-cbList readx = do
-    expectP (L.Punc "{")
-    listRest False +++ listNext
-    where
-        listRest started = do
-            L.Punc c <- lexP
-            case c of
-                "}"           -> return []
-                "," | started -> listNext
-                _             -> pfail
-        listNext = do
-            x  <- reset readx
-            xs <- listRest True
-            return (x:xs)
 
 type VariablePaths = M.Map VariableName TreePath
 
