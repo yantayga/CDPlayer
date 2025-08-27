@@ -45,7 +45,7 @@ cmdSetField setter [val] state = let v = readEither val in
         case v of
                 Left err -> return $ Left err
                 Right a -> return $ Right $ setter state a
-cmdSetField _ [] _ = return errTooManyArguments
+cmdSetField _ [] _ = return errNotEnoughArguments
 cmdSetField _ _ _ = return errTooManyArguments
 
 makeGetter :: (a -> b) -> (b -> c) -> (a -> c)

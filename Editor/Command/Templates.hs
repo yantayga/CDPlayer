@@ -30,7 +30,7 @@ cmdShowTemplates [] state = do
         printFn (idx, r) = do
             print idx
             putStrLn $ templateDesc r
-cmdShowTemplates _ _ = errTooManyArguments
+cmdShowTemplates _ _ = return errTooManyArguments
 
 cmdAddTemplate :: Command
 cmdAddTemplate (n:fs) state = return $ Right state {cddb = addTemplatesToCDDB (cddb state) [PrimitiveTemplate n fs]}

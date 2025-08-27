@@ -15,6 +15,7 @@ import CDDB.CDDB
 
 import Editor.Command.Types
 import Editor.Command.Common
+import Editor.Command.Errors
 import Editor.Command.Help
 import Editor.Command.Settings
 
@@ -58,11 +59,11 @@ cmdDumpCDDB :: Command
 cmdDumpCDDB [] state = do
     print (cddb state)
     return $ Right state
-cmdDumpCDDB _ _ = errTooManyArguments
+cmdDumpCDDB _ _ = return errTooManyArguments
 
 cmdCreateEmptyCDDB :: Command
 cmdCreateEmptyCDDB [] state = return $ Right $ initialProgramState $ settings state
-cmdCreateEmptyCDDB _ _ = errTooManyArguments
+cmdCreateEmptyCDDB _ _ = return errTooManyArguments
 
 cmdSaveCDDB :: Command
 cmdSaveCDDB args state = do
