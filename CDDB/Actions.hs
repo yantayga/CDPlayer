@@ -30,7 +30,7 @@ instance FromJSON Action where
 instance Show Action where
     show :: Action -> String
     show Stop = "stop"
-    show (Delete vns) = "delete" ++ unwords vns
+    show (Delete vns) = "delete " ++ unwords vns
     show (AddFact name fvs) = "addFact " ++ name
 
 instance Read Action where
@@ -41,23 +41,15 @@ instance Read Action where
                 return Stop
             readDelete = do
                 expectP (L.Ident "delete")
-                vns <- step $ spaceList readPrec :: ReadPrec [VariableName]
+                vns <- spaceList
                 return $ Delete vns
             readAddFact = do
                 expectP (L.Ident "addFact")
-                L.Punc " " <- lexP
                 L.Ident s <- lexP
                 return $ AddFact s []
 
--- Taken form GHC.Read 'list'
-spaceList :: ReadPrec a -> ReadPrec [a]
-spaceList readx = do
-    listRest +++ listNext
-    where
-        listRest = do
-            L.Punc " " <- lexP
-            listNext
-        listNext = do
-            x  <- reset readx
-            xs <- listRest
-            return (x:xs)
+spaceList :: ReadPrec [String]
+spaceList = do
+    L.Ident x  <- lexP
+    xs <- spaceList +++ return []
+    return (x:xs)
