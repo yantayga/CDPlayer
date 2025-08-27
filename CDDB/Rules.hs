@@ -9,6 +9,7 @@ import qualified Data.Map as M
 import Data.UUID (UUID)
 
 import CDDB.Types
+import CDDB.Actions
 import CDDB.Tree.Filter
 import CDDB.Tree.Syntax
 

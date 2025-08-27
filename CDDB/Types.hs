@@ -20,13 +20,6 @@ type FieldVariables = [Expression]
 
 data Primitive = Primitive Name FieldVariables deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-type Actions = [Action]
-
-data Action = Stop
-    | Delete [VariableName]
-    | AddFact Primitive
-    deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
 type Knowledge = [Fact]
 
 data Fact = Fact Name FieldConstants deriving (Eq, Show, Generic, ToJSON, FromJSON)

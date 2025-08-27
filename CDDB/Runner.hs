@@ -6,11 +6,13 @@ module CDDB.Runner where
 import qualified Data.Map as M
 
 import CDDB.Types
-import CDDB.Rules
 import CDDB.CDDB
+import CDDB.Rules
+import CDDB.Actions
 import CDDB.Expression.Types
 import CDDB.Expression.Eval
 import CDDB.Tree.Syntax
+import CDDB.Logging
 import CDDB.Utils
 
 data ContextState = Finished | NonFinished deriving (Eq, Ord)
@@ -23,7 +25,8 @@ data Context = Context {
         accumulatedScore :: Score,
         accumulatedKnowledge :: Knowledge,
         state :: ContextState,
-        recursionDepth :: RecursionDepth
+        recursionDepth :: RecursionDepth,
+        workingLog :: Logs
     }
 
 applyTree :: CDDB -> SyntacticTree -> RecursionDepth -> [Context]
@@ -51,7 +54,8 @@ emptyContext t = Context {
         accumulatedScore = 1.0,
         accumulatedKnowledge = [],
         state = NonFinished,
-        recursionDepth = 0
+        recursionDepth = 0,
+        workingLog = ""
     }
 
 matchRules :: SyntacticTree -> CDDB -> [(Rule, VariableStates)]
@@ -71,7 +75,7 @@ doActions = foldl doAction
 
 doAction :: Context -> Action -> Context
 doAction ctx Stop = ctx {state = Finished}
-doAction ctx (AddFact p) = addFact ctx p
+doAction ctx (AddFact name fcs) = logged Debug "Actions command is not implemented yet." ctx -- addFact ctx p
 doAction ctx (Delete as) = ctx {currentTree = removeNodes (currentTree ctx) $ map (variableStates ctx M.!) as} -- TODO: M.! can fail! use mapMaybe
 
 removeNodes :: SyntacticTree -> [Constant] -> SyntacticTree
@@ -93,5 +97,6 @@ checkConditions states = all ((== CBoolean True) . evaluateExpression states)
 evaluateFact :: VariableStates -> Primitive -> Fact
 evaluateFact states (Primitive name fieldVariables) = Fact name $ map (evaluateExpression states) fieldVariables
 
-
+logged :: LogLevel -> LogString -> Context -> Context
+logged ll l ctx = ctx {workingLog = addLogLine ll l (workingLog ctx)}
 

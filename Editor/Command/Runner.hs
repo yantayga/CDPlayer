@@ -6,6 +6,7 @@ module Editor.Command.Runner  where
 import qualified Data.Map as M
 
 import CDDB.Runner
+import CDDB.Logging
 
 import Editor.Command.Types
 import Editor.Command.Settings
@@ -28,4 +29,6 @@ cmdRun args state = if null results
             print (recursionDepth result)
             putStrLn "Accumulated knowledge:"
             print (accumulatedKnowledge result)
+            putStrLn "Logs:"
+            printLogs (workingLog result)
             return ()
