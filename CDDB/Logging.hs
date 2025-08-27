@@ -3,13 +3,16 @@
 
 module CDDB.Logging where
 
-type Logs = String
+type Logs = [(LogLevel, LogString)]
 type LogString = String
 
 data LogLevel = Info | Warning | Debug deriving (Eq, Enum, Ord, Show)
 
+emptyLog :: Logs
+emptyLog = []
+
 addLogLine :: LogLevel -> LogString -> Logs -> Logs
-addLogLine ll s ls = show ll ++ ":" ++ ls ++ "\n" ++ s
+addLogLine ll s ls = (ll, s):ls
 
 printLogs :: Logs -> IO ()
-printLogs = print
+printLogs = mapM_ print

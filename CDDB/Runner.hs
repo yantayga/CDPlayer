@@ -59,7 +59,7 @@ emptyContext t = Context {
         accumulatedKnowledge = [],
         state = NonFinished,
         recursionDepth = 0,
-        workingLog = ""
+        workingLog = emptyLog
     }
 
 matchRules :: SyntacticTree -> CDDB -> [(Rule, VariableStates)]
