@@ -99,4 +99,3 @@ evaluateFact states (Primitive name fieldVariables) = Fact name $ map (evaluateE
 
 logged :: LogLevel -> LogString -> Context -> Context
 logged ll l ctx = ctx {workingLog = addLogLine ll l (workingLog ctx)}
-

@@ -6,6 +6,7 @@ module CDDB.Rules where
 import GHC.Generics
 import Data.Aeson (ToJSON, FromJSON)
 import qualified Data.Map as M
+import Data.List (intercalate)
 import Data.UUID (UUID)
 
 import CDDB.Types
@@ -43,15 +44,17 @@ matchRulesAndFindPaths :: SyntacticTree -> Rules -> M.Map RuleId (Rule, Variable
 matchRulesAndFindPaths t = M.mapMaybe (matchRuleAndFindPaths t)
 
 ruleDesc :: (RuleId, Rule) -> String
-ruleDesc (ruleId, Rule comment score filterExpression _ _ _) =
+ruleDesc (ruleId, Rule comment score filterExpression _ _ actions) =
     "Id: " ++ show ruleId ++ "\n" ++
     "\tComment: " ++ show comment ++ "\n" ++
     "\tScore: " ++ show score ++ "\n" ++
-    "\tFilterExpression: " ++ show filterExpression ++ "\n"
+    "\tFilterExpression: " ++ show filterExpression ++ "\n" ++
+    "\tActions: " ++ intercalate "\n\t\t" (map show actions) ++ "\n"
 
 boundRuleDesc :: SyntacticTree -> (RuleId, (Rule, VariablePaths)) -> String
 boundRuleDesc t (ruleId, (r, vp)) = ruleDesc (ruleId, r) ++ "\n\tVariable bounds:\n" ++ concat (M.mapWithKey (treePathDesc t) vp)
 
+treePathDesc :: SyntacticTree -> String -> TreePath -> String
 treePathDesc t vn path = "\t\t" ++ vn ++ " = " ++ show path ++ " -> " ++ printTree (findNode path t) ++ "\n"
     where
         printTree Nothing = "<not found>"

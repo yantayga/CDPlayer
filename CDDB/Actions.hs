@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
+{-# LANGUAGE NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
 module CDDB.Actions where
