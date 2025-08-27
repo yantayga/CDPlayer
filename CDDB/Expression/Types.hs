@@ -9,6 +9,7 @@ import qualified Data.Map as M
 
 import CDDB.Types
 import CDDB.Tree.Syntax
+import CDDB.Expression.UnOps
 
 type VariableStates = M.Map VariableName Constant
 
@@ -32,8 +33,6 @@ data Constant = Error
     | CTemplate Name
     | CType Name
     deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
-data UnOp = IsNull | IsNotNull | UnaryMinus deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data BinOp = Plus | Minus | Divide | Multiply
     | IsA | IsNotA

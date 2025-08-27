@@ -11,6 +11,7 @@ import qualified Data.Map as M
 
 import CDDB.Types
 import CDDB.Expression.Types
+import CDDB.Expression.UnOps
 import CDDB.Tree.Syntax
 
 emptyVariableStates :: VariableStates
