@@ -11,7 +11,6 @@ import CDDB.CDDB
 import CDDB.Rules
 import CDDB.Actions
 import CDDB.Templates
-import CDDB.Expression.Types
 import CDDB.Expression.Eval
 import CDDB.Expression.Constants
 import CDDB.Expression.Expression

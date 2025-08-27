@@ -94,7 +94,7 @@ filterByN [] _ = errNotEnoughArguments
 filterByN _ _ = errTooManyArguments
 
 useAll :: FilterRules
-useAll [] ls = Right (ls, [])
+useAll [] ls = Right ([], ls)
 useAll _ _ = errTooManyArguments
 
 cmdFilterRules :: Command

@@ -10,13 +10,14 @@ import Data.Maybe
 import qualified Data.Map as M
 
 import CDDB.Types
-import CDDB.Expression.Types
 import CDDB.Expression.UnOps
 import CDDB.Expression.BinOps
 import CDDB.Expression.Constants
 import CDDB.Expression.Expression
 import CDDB.Expression.VariableDefs
 import CDDB.Tree.Syntax
+
+type VariableStates = M.Map VariableName Constant
 
 emptyVariableStates :: VariableStates
 emptyVariableStates = M.empty
