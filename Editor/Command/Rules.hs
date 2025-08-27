@@ -98,10 +98,11 @@ useAll [] ls = Right (ls, [])
 useAll _ _ = Left "Too many arguments"
 
 cmdFilterRules :: Command
-cmdFilterRules args state = printAndUpdateCurrentRules (boundRuleDesc tree) (mapSnd fst) rulesFound state
-    where
-        tree = read $ unwords args
-        rulesFound = M.toList $ matchRulesAndFindPaths tree (rules $ cddb state)
+cmdFilterRules args state =  case readEither (unwords args) of
+        Left err -> return $ Left err
+        Right tree -> printAndUpdateCurrentRules (boundRuleDesc tree) (mapSnd fst) rulesFound state
+            where
+                rulesFound = M.toList $ matchRulesAndFindPaths tree (rules $ cddb state)
 
 cmdFindRules :: Command
 cmdFindRules args state = printAndUpdateCurrentRules ruleDesc id rulesFound state
