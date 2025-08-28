@@ -19,7 +19,7 @@ data Constant = ErrorInEvaluation String
     | CInteger Integer
     | CDouble Double
     | CString String
-    | CTreePart TreePath
+    | CTreePart TreePath SyntacticTree
     | CTemplate Name
     | CType Name
     deriving (Eq, Generic, ToJSON, FromJSON)
@@ -33,7 +33,7 @@ instance Show Constant where
     show (CInteger i) = show i
     show (CDouble d) = show d
     show (CString s) = show s
-    show (CTreePart _) = undefined
+    show (CTreePart _ _) = undefined
     show (CTemplate name) = "!" ++ name
     show (CType name) = "$" ++ name
 

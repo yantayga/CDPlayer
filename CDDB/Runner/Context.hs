@@ -21,6 +21,7 @@ data Context = Context {
         accumulatedScore :: Score,
         accumulatedKnowledge :: Knowledge,
         state :: ContextState,
+        contextMaxRecursionDepth :: RecursionDepth,
         recursionDepth :: RecursionDepth,
         workingLog :: Logs
     }
@@ -28,14 +29,15 @@ data Context = Context {
 resetContext :: Context -> Context
 resetContext ctx = ctx {variableStates = emptyVariableStates, state = NonFinished, recursionDepth = 1 + recursionDepth ctx}
 
-emptyContext :: CDDB -> SyntacticTree -> Context
-emptyContext cddb t = Context {
+emptyContext :: CDDB -> SyntacticTree -> RecursionDepth -> Context
+emptyContext cddb t mrd = Context {
         db = cddb,
         variableStates = emptyVariableStates,
         currentTree = t,
         accumulatedScore = 1.0,
         accumulatedKnowledge = [],
         state = NonFinished,
+        contextMaxRecursionDepth = mrd,
         recursionDepth = 0,
         workingLog = emptyLog
     }

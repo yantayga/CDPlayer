@@ -16,6 +16,7 @@ import CDDB.Tree.Filter
 import CDDB.Tree.Syntax
 import CDDB.Expression.VariableDefs
 import CDDB.Expression.Expression
+import CDDB.Expression.Eval
 
 type Rules = M.Map RuleId Rule
 
@@ -56,10 +57,10 @@ deleteRules = foldl deleteRule
 findRuleById :: Rules -> RuleId -> Maybe (RuleId, Rule)
 findRuleById rules ruleId = (ruleId,) <$> M.lookup ruleId rules
 
-matchRuleAndFindPaths :: SyntacticTree -> Rule -> Maybe (Rule, VariablePaths)
+matchRuleAndFindPaths :: SyntacticTree -> Rule -> Maybe (Rule, VariableStates)
 matchRuleAndFindPaths t rule = (rule,) <$> matchFilterExpr t (filterExpression rule)
 
-matchRulesAndFindPaths :: SyntacticTree -> Rules -> M.Map RuleId (Rule, VariablePaths)
+matchRulesAndFindPaths :: SyntacticTree -> Rules -> M.Map RuleId (Rule, VariableStates)
 matchRulesAndFindPaths t = M.mapMaybe (matchRuleAndFindPaths t)
 
 ruleDesc :: (RuleId, Rule) -> String
@@ -74,11 +75,5 @@ ruleDesc (ruleId, rule) =
     "\n\tDelete nodes: " ++ show (deletedNodes rule) ++
     "\n\tStop: " ++ show (stop rule) ++ "\n"
 
-boundRuleDesc :: SyntacticTree -> (RuleId, (Rule, VariablePaths)) -> String
-boundRuleDesc t (ruleId, (rule, vp)) = ruleDesc (ruleId, rule) ++ "\n\tVariable bounds:\n" ++ concat (M.mapWithKey (treePathDesc t) vp)
-
-treePathDesc :: SyntacticTree -> String -> TreePath -> String
-treePathDesc t vn path = "\t\t" ++ vn ++ " = " ++ show path ++ " -> " ++ printTree (findNode path t) ++ "\n"
-    where
-        printTree Nothing = "<not found>"
-        printTree (Just st) = show st
+boundRuleDesc :: SyntacticTree -> (RuleId, (Rule, VariableStates)) -> String
+boundRuleDesc t (ruleId, (rule, vp)) = ruleDesc (ruleId, rule) ++ "\n\tVariable bounds:\n" ++ concat (M.map show vp)

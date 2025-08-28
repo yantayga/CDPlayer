@@ -25,9 +25,18 @@ emptyVariableStates = M.empty
 addVariableDef :: VariableStates -> VariableDef -> VariableStates
 addVariableDef states (VariableDef name expr) = M.insert name (evaluateExpression states expr) states
 
+bindTreeVariables :: VariableStates -> SyntacticTree -> SyntacticTree
+bindTreeVariables states t = evalRes t $ evaluateExpression states (Variable $ nodeName t)
+    where
+        evalRes _ (CTreePart _ tp) = tp
+        evalRes (Tag name st) _ = Tag name $ map (bindTreeVariables states) st
+        evalRes t _ = t
+        nodeName (Tag name _) = name
+        nodeName (Word name _) = name
+
 evaluateExpression :: VariableStates -> Expression -> Constant
 evaluateExpression _ (Constant const) = const
-evaluateExpression map (Variable name) = fromMaybe Null $ M.lookup name map
+evaluateExpression states (Variable name) = fromMaybe Null $ M.lookup name states
 evaluateExpression states (UnOp op expr) = evaluateUnOpExpression op (evaluateExpression states expr)
 evaluateExpression states (BinOp op expr1 expr2) = evaluateBinOpExpression op (evaluateExpression states expr1) (evaluateExpression states expr2)
 

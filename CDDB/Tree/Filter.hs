@@ -19,6 +19,8 @@ import CDDB.Types
 import CDDB.Tree.Syntax
 import CDDB.Parser
 import CDDB.JSON
+import CDDB.Expression.Constants
+import CDDB.Expression.Eval
 
 data FilterExpressionT a = Asterisk a
     | FilterTag a TagId [FilterExpressionT a]
@@ -88,30 +90,29 @@ readVariable = readJust +++ return Nothing
             expectP (L.Symbol ":")
             return $ Just vn
 
-type VariablePaths = M.Map VariableName TreePath
-
 -- Very inefficirent
 -- TODO: look at Trie data type
 -- TODO: add variable setting for * and {}
 -- TODO: implement Not
 -- TODO: implement Or
-matchFilterExpr :: SyntacticTree -> FilterExpression -> Maybe VariablePaths
+matchFilterExpr :: SyntacticTree -> FilterExpression -> Maybe VariableStates
 matchFilterExpr t filterExpr = matchFilterExpr' t filterExpr 0 []
 
-matchFilterExpr' :: SyntacticTree -> FilterExpression -> TreePos -> TreePath -> Maybe VariablePaths
+matchFilterExpr' :: SyntacticTree -> FilterExpression -> TreePos -> TreePath -> Maybe VariableStates
 matchFilterExpr' _ (Asterisk _) _ _ = Just M.empty
 matchFilterExpr' (Tag tagId ts) (FilterTag Nothing fid fs) pos path    = guard (tagId == fid) >> matchFilterExprs ts fs pos (pos:path)
-matchFilterExpr' (Tag tagId ts) (FilterTag (Just vn) fid fs) pos path  = guard (tagId == fid) >> matchFilterExprs ts fs pos (pos:path) >>= \vs -> Just (addPath vn pos path vs)
+matchFilterExpr' t@(Tag tagId ts) (FilterTag (Just vn) fid fs) pos path  = 
+    guard (tagId == fid) >> matchFilterExprs ts fs pos (pos:path) >>= \vs -> Just (addPath vn pos path t vs)
 matchFilterExpr' (Word tagId s) (FilterWord Nothing fid fs) _ _        = guard (tagId == fid && s == fs) >> Just M.empty
-matchFilterExpr' (Word tagId s) (FilterWord (Just vn) fid fs) pos path = guard (tagId == fid && s == fs) >> Just (addPath vn pos path M.empty)
+matchFilterExpr' t@(Word tagId s) (FilterWord (Just vn) fid fs) pos path = guard (tagId == fid && s == fs) >> Just (addPath vn pos path t M.empty)
 matchFilterExpr' _ (FilterNot _) _ _  = error "Filter expression for 'Not' is not implemented yet..."
 matchFilterExpr' _ (FilterOr _ _) _ _ = error "Filter expression for 'Or' is not implemented yet..."
 matchFilterExpr' _ _ _ _ = Nothing
 
-addPath :: VariableName -> TreePos -> TreePath -> VariablePaths -> VariablePaths
-addPath vn n ns = M.insert vn (tail $ reverse $ n:ns)
+addPath :: VariableName -> TreePos -> TreePath -> SyntacticTree -> VariableStates -> VariableStates
+addPath vn n ns t = M.insert vn (CTreePart (tail $ reverse $ n:ns) t)
 
-matchFilterExprs :: [SyntacticTree] -> [FilterExpression] -> TreePos -> TreePath -> Maybe VariablePaths
+matchFilterExprs :: [SyntacticTree] -> [FilterExpression] -> TreePos -> TreePath -> Maybe VariableStates
 matchFilterExprs [] [] _ _ = Just M.empty
 matchFilterExprs _ [] _ _ = Nothing
 matchFilterExprs [] ((Asterisk _): sfs) pos path = matchFilterExprs [] sfs pos path
