@@ -103,8 +103,8 @@ matchFilterExpr' _ (Asterisk _) _ _ = Just M.empty
 matchFilterExpr' (Tag tagId ts) (FilterTag Nothing fid fs) pos path    = guard (tagId == fid) >> matchFilterExprs ts fs pos (pos:path)
 matchFilterExpr' t@(Tag tagId ts) (FilterTag (Just vn) fid fs) pos path  =
     guard (tagId == fid) >> matchFilterExprs ts fs pos (pos:path) >>= \vs -> Just (addConstant vn pos path t vs)
-matchFilterExpr' (Word tagId s) (FilterWord Nothing fid fs) _ _        = guard (tagId == fid && s == fs) >> Just M.empty
-matchFilterExpr' t@(Word tagId s) (FilterWord (Just vn) fid fs) pos path = guard (tagId == fid && s == fs) >> Just (addConstant vn pos path t M.empty)
+matchFilterExpr' (Word tagId s _) (FilterWord Nothing fid fs) _ _        = guard (tagId == fid && s == fs) >> Just M.empty
+matchFilterExpr' t@(Word tagId s _) (FilterWord (Just vn) fid fs) pos path = guard (tagId == fid && s == fs) >> Just (addConstant vn pos path t M.empty)
 matchFilterExpr' _ (FilterNot _) _ _  = error "Filter expression for 'Not' is not implemented yet..."
 matchFilterExpr' _ (FilterOr _ _) _ _ = error "Filter expression for 'Or' is not implemented yet..."
 matchFilterExpr' _ _ _ _ = Nothing

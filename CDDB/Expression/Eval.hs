@@ -30,7 +30,7 @@ bindTreeVariables states t = evalRes t $ evaluateExpression states (Variable $ n
         evalRes (Tag name st) _ = Tag name $ map (bindTreeVariables states) st
         evalRes t' _ = t'
         nodeName (Tag name _) = name
-        nodeName (Word name _) = name
+        nodeName (Word name _ _) = name
 
 evaluateExpression :: VariableStates -> Expression -> Constant
 evaluateExpression _ (Constant c) = c

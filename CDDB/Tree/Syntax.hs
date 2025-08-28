@@ -13,13 +13,14 @@ import Text.ParserCombinators.ReadPrec as R
 import qualified Text.Read.Lex as L
 
 import CDDB.JSON
+import CDDB.Tree.WordProperty
 
 type TagId = String
 type TreePos = Int
 type TreePath = [TreePos]
 
 data SyntacticTree = Tag TagId [SyntacticTree]
-    | Word TagId String
+    | Word TagId String WordProperties
     deriving (Eq, Generic)
 
 instance ToJSON SyntacticTree where
@@ -31,7 +32,7 @@ instance FromJSON SyntacticTree where
 instance Show SyntacticTree where
     show :: SyntacticTree -> String
     show (Tag tid ts) = tid ++ " [" ++ intercalate ", " (map show ts) ++ "]"
-    show (Word tid w) = tid ++ "(" ++ show w ++ ")"
+    show (Word tid w desc) = tid ++ "(" ++ show w ++ " [" ++ intercalate ", " (map show desc) ++ "])"
 
 instance Read SyntacticTree where
     readPrec = choice [readTag, readWord]
@@ -45,7 +46,8 @@ instance Read SyntacticTree where
                 paren
                     ( do
                         L.String s <- lexP
-                        return $ Word n s
+                        ps <- readListPrec
+                        return $ Word n s ps
                     )
     readListPrec = readListPrecDefault
 
