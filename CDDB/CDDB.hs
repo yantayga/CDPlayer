@@ -23,7 +23,7 @@ type FieldConstants = [Constant]
 
 data CDDB = CDDB {
         name :: Name,
-        comment :: Comment,
+        cddbcomment :: Comment,
         version :: Integer,
         date :: UTCTime,
         templates :: PrimitiveTemplates,
@@ -34,7 +34,7 @@ data CDDB = CDDB {
 emptyCDDB :: CDDB
 emptyCDDB = CDDB {
         name = "",
-        comment = "",
+        cddbcomment = "",
         version = 1,
         date = UTCTime (fromOrdinalDate 0 0) 0,
         templates = empty,

@@ -4,7 +4,7 @@
 module CDDB.Expression.Eval where
 
 import GHC.Generics
-import Data.Aeson hiding (Null, Error)
+import Data.Aeson hiding (Null)
 import Data.List
 import Data.Maybe
 import qualified Data.Map as M
@@ -42,7 +42,7 @@ evaluateUnOpExpression IsNotNull _      = CBoolean True
 evaluateUnOpExpression UnaryMinus (CBoolean v)  = CBoolean $ not v
 evaluateUnOpExpression UnaryMinus (CInteger v)  = CInteger $ -v
 evaluateUnOpExpression UnaryMinus (CDouble v)   = CDouble $ -v
-evaluateUnOpExpression UnaryMinus _             = Error
+evaluateUnOpExpression UnaryMinus c             = ErrorInEvaluation $ "Unary minus is not applicable to " ++ show c
 
 
 evaluateBinOpExpression :: BinOp -> Constant -> Constant -> Constant
@@ -55,13 +55,13 @@ evaluateBinOpExpression Plus (CDouble v1) (CInteger v2)  = CDouble $ v1 + fromIn
 evaluateBinOpExpression Plus (CInteger v1) (CDouble v2)  = CDouble $ fromIntegral v1 + v2
 evaluateBinOpExpression Plus (CDouble v1) (CDouble v2)  = CDouble $ v1 + v2
 evaluateBinOpExpression Plus (CString v1) (CString v2)  = CString $ v1 ++ v2
-evaluateBinOpExpression Plus _ _  = Error
+evaluateBinOpExpression Plus a b  = ErrorInEvaluation $ "Plus is not applicable to " ++ show a ++ "/" ++ show b
 
 evaluateBinOpExpression Minus (CInteger v1) (CInteger v2)  = CInteger $ v1 - v2
 evaluateBinOpExpression Minus (CDouble v1) (CInteger v2)  = CDouble $ v1 - fromIntegral v2
 evaluateBinOpExpression Minus (CInteger v1) (CDouble v2)  = CDouble $ fromIntegral v1 - v2
 evaluateBinOpExpression Minus (CDouble v1) (CDouble v2)  = CDouble $ v1 - v2
-evaluateBinOpExpression Minus _ _  = Error
+evaluateBinOpExpression Minus a b  = ErrorInEvaluation $ "Minus is not applicable to " ++ show a ++ "/" ++ show b
 
 evaluateBinOpExpression Multiply (CBoolean v1) (CBoolean v2)  = CBoolean $ v1 && v2
 evaluateBinOpExpression Multiply (CInteger v1) (CInteger v2)  = CInteger $ v1 * v2
@@ -69,7 +69,7 @@ evaluateBinOpExpression Multiply (CDouble v1) (CInteger v2)  = CDouble $ v1 * fr
 evaluateBinOpExpression Multiply (CInteger v1) (CDouble v2)  = CDouble $ fromIntegral v1 * v2
 evaluateBinOpExpression Multiply (CDouble v1) (CDouble v2)  = CDouble $ v1 * v2
 evaluateBinOpExpression Multiply (CString v1) (CInteger v2)  = CString $ concat $ genericTake v2 $ repeat v1
-evaluateBinOpExpression Multiply _ _  = Error
+evaluateBinOpExpression Multiply a b  = ErrorInEvaluation $ "Multiply is not applicable to " ++ show a ++ "/" ++ show b
 
 evaluateBinOpExpression Divide (CBoolean v1) (CBoolean v2)  = CBoolean $ v1 && v2
 evaluateBinOpExpression Divide (CInteger v1) (CInteger v2)  = CInteger $ v1 * v2
@@ -77,12 +77,8 @@ evaluateBinOpExpression Divide (CDouble v1) (CInteger v2)  = CDouble $ v1 * from
 evaluateBinOpExpression Divide (CInteger v1) (CDouble v2)  = CDouble $ fromIntegral v1 * v2
 evaluateBinOpExpression Divide (CDouble v1) (CDouble v2)  = CDouble $ v1 * v2
 evaluateBinOpExpression Divide (CString v1) (CInteger v2)  = CString [v1 !! fromIntegral v2]
-evaluateBinOpExpression Divide _ _  = Error
+evaluateBinOpExpression Divide a b  = ErrorInEvaluation $ "Divide is not applicable to " ++ show a ++ "/" ++ show b
 
-evaluateBinOpExpression IsA _ (CType v)  = CBoolean True
-evaluateBinOpExpression IsA _ _  = Error
-
-evaluateBinOpExpression IsNotA _ (CType v)  = CBoolean False
-evaluateBinOpExpression IsNotA _ _  = Null
-
-evaluateBinOpExpression Dot _ _  = Error
+evaluateBinOpExpression IsA _ _  = ErrorInEvaluation "IsA operation is not implemented yet"
+evaluateBinOpExpression IsNotA _ _  = ErrorInEvaluation "IsNotA operation is not implemented yet"
+evaluateBinOpExpression Dot _ _  = ErrorInEvaluation "Dot operation is not implemented yet"

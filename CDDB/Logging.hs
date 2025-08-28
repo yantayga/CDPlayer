@@ -6,7 +6,7 @@ module CDDB.Logging where
 type Logs = [(LogLevel, LogString)]
 type LogString = String
 
-data LogLevel = Info | Warning | Debug deriving (Eq, Enum, Ord, Show)
+data LogLevel = Info | Warning | Debug | Error deriving (Eq, Enum, Ord, Show)
 
 emptyLog :: Logs
 emptyLog = []

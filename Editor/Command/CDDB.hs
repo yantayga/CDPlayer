@@ -23,7 +23,7 @@ getCDDBCommands :: CommandMap
 getCDDBCommands = M.fromList [
         ("help",     CommandDef (cmdHelp getCDDBCommands) "This help."),
         ("name",     CommandDef (cmdGetField $ makeGetter cddb name) "Get database name."),
-        ("comment",  CommandDef (cmdGetField $ makeGetter cddb comment) "Get database comment."),
+        ("comment",  CommandDef (cmdGetField $ makeGetter cddb cddbcomment) "Get database comment."),
         ("version",  CommandDef (cmdGetField $ makeGetter cddb version) "Get database version."),
         ("date",     CommandDef (cmdGetField $ makeGetter cddb date) "Get database date."),
         ("filename", CommandDef (cmdGetField $ makeGetter settings cddbFileName) "Get database filename.")
@@ -43,7 +43,7 @@ setName :: CDDB -> String -> CDDB
 setName cddb name = cddb {name = name}
 
 setComment :: CDDB -> String -> CDDB
-setComment cddb comment = cddb {comment = comment}
+setComment cddb comment = cddb {cddbcomment = comment}
 
 setVersion :: CDDB -> Integer -> CDDB
 setVersion cddb version = cddb {version = version}

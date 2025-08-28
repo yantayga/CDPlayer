@@ -15,12 +15,12 @@ import Editor.Command.Help
 
 actionCommands :: CommandMap
 actionCommands = M.fromList [
-        ("help",   CommandDef (cmdHelp actionCommands) "This help."),
-        ("add",    CommandDef cmdAddAction "Add action at pos <n> to rule(s)."),
-        ("delete", CommandDef cmdDeleteActio "Delete action <n> to rule(s)."),
-        ("update", CommandDef cmdUpdateAction "Update action <n> to rule(s).")
+        ("help",   CommandDef (cmdHelp actionCommands) "This help.")
+--        ("add",    CommandDef cmdAddAction "Add action at pos <n> to rule(s)."),
+--        ("delete", CommandDef cmdDeleteActio "Delete action <n> to rule(s)."),
+--        ("update", CommandDef cmdUpdateAction "Update action <n> to rule(s).")
     ]
-
+{--
 cmdAddAction :: Command
 cmdAddAction (arg:args) state = 
     case (readEither (unwords args), readEither arg) of
@@ -50,3 +50,4 @@ cmdUpdateAction (arg:args) state  =
     where
         replaceAction n a (ruleId, Rule comment score filterExpression locals conditions actions) = (ruleId, Rule comment score filterExpression locals conditions (updateNthElement n a actions))
 cmdUpdateAction [] _ = return errNotEnoughArguments
+--}

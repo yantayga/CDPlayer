@@ -13,7 +13,7 @@ import qualified Text.Read.Lex as L
 import CDDB.Types
 import CDDB.Tree.Syntax
 
-data Constant = Error
+data Constant = ErrorInEvaluation String
     | Null
     | CBoolean Bool
     | CInteger Integer
@@ -26,7 +26,7 @@ data Constant = Error
 
 instance Show Constant where
     show :: Constant -> String
-    show Error = "<error>"
+    show (ErrorInEvaluation err) = "ERROR: " ++ err
     show Null = "null"
     show (CBoolean True) = "true"
     show (CBoolean False) = "false"

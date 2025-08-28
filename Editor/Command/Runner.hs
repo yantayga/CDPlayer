@@ -6,8 +6,9 @@ module Editor.Command.Runner  where
 import qualified Data.Map as M
 import Text.Read (readEither)
 
-import CDDB.Runner
 import CDDB.Logging
+import CDDB.Runner.Runner
+import CDDB.Runner.Context
 
 import Editor.Command.Types
 import Editor.Command.Settings
