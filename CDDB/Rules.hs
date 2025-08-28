@@ -11,6 +11,7 @@ import Data.UUID (UUID)
 
 import CDDB.Types
 import CDDB.AddFact
+import CDDB.DeleteNodes
 import CDDB.Tree.Filter
 import CDDB.Tree.Syntax
 import CDDB.Expression.VariableDefs
@@ -24,7 +25,6 @@ type Conditions = [Expression]
 
 type AddFacts = [AddFact]
 
-
 data Rule = Rule {
         comment :: Comment,
         score :: Score,
@@ -33,7 +33,7 @@ data Rule = Rule {
         conditions :: Conditions,
         parent :: SyntacticTree,
         facts :: AddFacts,
-        deletedNodes :: [VariableName],
+        deletedNodes :: DeleteNodes,
         stop :: Bool
     } deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -41,7 +41,7 @@ type Score = Double
 type RuleId = UUID
 
 newRule :: Rule
-newRule = Rule "" 1.0 (Asterisk Nothing) [] [] (Tag "S" []) [] [] False
+newRule = Rule "" 1.0 (Asterisk Nothing) [] [] (Tag "S" []) [] (DeleteNodes []) False
 
 addRules :: Rules -> [(RuleId, Rule)] -> Rules
 addRules = foldl insertRule
@@ -71,7 +71,7 @@ ruleDesc (ruleId, rule) =
     "\n\tLocals: " ++ intercalate "\n\t\t" (map show $ locals rule) ++
     "\n\tConditions: " ++ intercalate "\n\t\t" (map show $ conditions rule) ++
     "\n\tFacts to add: " ++ intercalate "\n\t\t" (map show $ facts rule) ++
-    "\n\tDelete nodes: " ++ intercalate "\n\t\t" (map show $ deletedNodes rule) ++
+    "\n\tDelete nodes: " ++ show (deletedNodes rule) ++
     "\n\tStop: " ++ show (stop rule) ++ "\n"
 
 boundRuleDesc :: SyntacticTree -> (RuleId, (Rule, VariablePaths)) -> String

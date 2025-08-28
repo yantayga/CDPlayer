@@ -24,7 +24,6 @@ instance Show VariableDef where
 instance Read VariableDef where
     readPrec = do
         L.Ident name <- lexP
-        expectP (L.Symbol "=")
+        expectP (L.Punc "=")
         ex <- step readPrec
         return $ VariableDef name ex
-                

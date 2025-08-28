@@ -1,7 +1,7 @@
 {-# LANGUAGE NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module CDDB.AddFact where
+module CDDB.DeleteNodes where
 
 import GHC.Generics
 import GHC.Read
@@ -13,23 +13,24 @@ import qualified Text.Read.Lex as L
 import CDDB.Types
 import CDDB.Expression.Expression
 import CDDB.Expression.VariableDefs
+import CDDB.Expression.Expression
 import CDDB.Parser
 import CDDB.JSON
 
-data AddFact = AddFact Name VariableDefs deriving (Generic, Eq)
+data DeleteNodes = DeleteNodes [VariableName] deriving (Generic, Eq)
 
-instance ToJSON AddFact where
+instance ToJSON DeleteNodes where
     toJSON t = toJSON $ show t
 
-instance FromJSON AddFact where
+instance FromJSON DeleteNodes where
    parseJSON = tryParseJSON
 
-instance Show AddFact where
-    show :: AddFact -> String
-    show (AddFact name fvs) = name ++ " " ++ show fvs
+instance Show DeleteNodes where
+    show :: DeleteNodes -> String
+    show (DeleteNodes vs) = unwords vs
 
-instance Read AddFact where
+instance Read DeleteNodes where
     readPrec = do
-        L.Ident s <- lexP
-        es <- readListPrec
-        return $ AddFact s es
+        vs <- spaceList
+        return $ DeleteNodes vs
+

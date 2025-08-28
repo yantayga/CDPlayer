@@ -13,6 +13,7 @@ import CDDB.Templates
 import CDDB.Rules
 import CDDB.AddFact
 import CDDB.Logging
+import CDDB.DeleteNodes
 import CDDB.Expression.VariableDefs
 import CDDB.Expression.Eval
 import CDDB.Expression.Constants
@@ -67,8 +68,9 @@ deleteTreeNodes rule ctx = if Nothing `elem` maybeNodes
         removeNode :: SyntacticTree -> Constant -> SyntacticTree
         removeNode t (CTreePart n) = findAndRemoveNode n t
         removeNode t _ = t
-        maybeNodes = map (`M.lookup` variableStates ctx) (deletedNodes rule)
-        notFound = map snd $ filter ((== Nothing) . fst) $ zip maybeNodes (deletedNodes rule)
+        maybeNodes = map (`M.lookup` variableStates ctx) (toDelete $ deletedNodes rule)
+        notFound = map snd $ filter ((== Nothing) . fst) $ zip maybeNodes (toDelete $ deletedNodes rule)
+        toDelete (DeleteNodes ns) = ns 
 
 checkStop :: WorkflowCommand
 checkStop rule ctx = Right $ if stop rule then debug "Stop." ctx {state = Finished} else ctx

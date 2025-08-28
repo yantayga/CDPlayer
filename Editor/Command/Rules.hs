@@ -20,30 +20,56 @@ import Editor.Command.Types
 import Editor.Command.Common
 import Editor.Command.Errors
 import Editor.Command.Help
-import Editor.Command.Actions
+import Editor.Command.RuleData
 
 ruleCommands :: CommandMap
 ruleCommands = M.fromList [
-        ("help",    CommandDef (cmdHelp ruleCommands) "This help."),
-        ("add",     CommandDef cmdAddRule "Add rule to current rules."),
-        ("write",   CommandDef (cmdWriteRules filterByN) "Add/update rule #arg to cddb."),
-        ("renew",   CommandDef (cmdRenewRules filterByN) "Regenerate rule #arg ids."),
-        ("delete",  CommandDef (cmdDeleteRules filterByN) "Delete rule #arg from the current rules."),
-        ("action",  CommandDef (runRuleCommand filterByN actionCommands) "Manipulate actions."),
-        ("wipe",    CommandDef (cmdWipeRules filterByN) "Delete rule #arg with id from CDDB.")
+        ("help",       CommandDef (cmdHelp ruleCommands) "This help."),
+        ("add",        CommandDef cmdAddRule "Add rule to current rules."),
+        ("write",      CommandDef (cmdWriteRules filterByN) "Add/update rule #arg to cddb."),
+        ("renew",      CommandDef (cmdRenewRules filterByN) "Regenerate rule #arg ids."),
+        ("clear",      CommandDef (cmdDeleteRules filterByN) "Delete rule #arg from the current rules."),
+        ("locals",     CommandDef (runRuleCommand filterByN localsCommand) "Manipulate locals of rule #arg."),
+        ("conditions", CommandDef (runRuleCommand filterByN conditionsCommand) "Manipulate conditions of rule #arg."),
+        ("facts",      CommandDef (runRuleCommand filterByN factsCommand) "Manipulate facts of rule #arg."),
+        ("delNode",    CommandDef (cmdSetDeleteNodes filterByN) "Set list of nodes to delete for rule #arg."),
+        ("stop",       CommandDef (cmdSetStop filterByN) "Set stop flag for rule #arg."),
+        ("wipe",       CommandDef (cmdWipeRules filterByN) "Delete rule #arg with id from CDDB.")
     ]
 
 rulesCommands :: CommandMap
 rulesCommands = M.fromList [
-        ("help",    CommandDef (cmdHelp rulesCommands) "This help."),
-        ("show",    CommandDef cmdShowRules "Show current rules."),
-        ("clear",   CommandDef (cmdDeleteRules useAll) "Clear current rules."),
-        ("write",   CommandDef (cmdWriteRules useAll)"Add/update current rules to cddb."),
-        ("renew",   CommandDef (cmdRenewRules useAll) "Regenerate rules ids."),
-        ("find",    CommandDef cmdFindRules "Find rules by ids."),
-        ("action",  CommandDef (runRuleCommand useAll actionCommands) "Manipulate actions."),
-        ("filter",  CommandDef cmdFilterRules "Find rules by syntactic tree.")
+        ("help",       CommandDef (cmdHelp rulesCommands) "This help."),
+        ("show",       CommandDef cmdShowRules "Show current rules."),
+        ("write",      CommandDef (cmdWriteRules useAll)"Add/update current rules to cddb."),
+        ("renew",      CommandDef (cmdRenewRules useAll) "Regenerate current rules ids."),
+        ("clear",      CommandDef (cmdDeleteRules useAll) "Clear current rules."),
+        ("locals",     CommandDef (runRuleCommand useAll localsCommand) "Manipulate locals."),
+        ("conditions", CommandDef (runRuleCommand useAll conditionsCommand) "Manipulate conditions."),
+        ("facts",      CommandDef (runRuleCommand useAll factsCommand) "Manipulate facts."),
+        ("delNode",    CommandDef (cmdSetDeleteNodes useAll) "Set list of nodes to delete for current rules."),
+        ("stop",       CommandDef (cmdSetStop useAll) "Set stop flag for current rules."),
+        ("wipe",       CommandDef (cmdWipeRules useAll) "Delete current rules from CDDB."),
+        ("find",       CommandDef cmdFindRules "Find rules by ids and set them current."),
+        ("filter",     CommandDef cmdFilterRules "Find rules by syntactic tree and set them current.")
     ]
+
+cmdSetStop :: FilterRules -> Command
+cmdSetStop f args state = case f args (currentRules state) of
+    Left err -> return $ Left err
+    Right (passed, used, [flagArg]) -> case readEither flagArg of
+        Left err -> return $ Left err
+        Right flag -> return $ Right state {currentRules = passed ++ map (mapSnd (\r -> r {stop = flag})) used}
+    Right (passed, used, []) -> return errNotEnoughArguments
+    Right (passed, used, _) -> return errTooManyArguments
+
+cmdSetDeleteNodes :: FilterRules -> Command
+cmdSetDeleteNodes f args state = case f args (currentRules state) of
+    Left err -> return $ Left err
+    Right (passed, used, []) -> return errNotEnoughArguments
+    Right (passed, used, restArgs) -> case readEither (unwords restArgs) of
+        Left err -> return $ Left $ (unwords restArgs) ++ ": " ++ err
+        Right list -> return $ Right state {currentRules = passed ++ map (mapSnd (\r -> r {deletedNodes = list})) used}
 
 cmdShowRules :: Command
 cmdShowRules [] state = do
@@ -64,38 +90,36 @@ cmdAddRule _ _ = return errTooManyArguments
 cmdDeleteRules :: FilterRules -> Command
 cmdDeleteRules f args state = case f args (currentRules state) of
     Left err -> return $ Left err
-    Right (passed, _) -> return $ Right state {currentRules = passed}
+    Right (passed, _, _) -> return $ Right state {currentRules = passed}
 
 cmdWipeRules :: FilterRules -> Command
 cmdWipeRules f args state = case f args (currentRules state) of
     Left err -> return $ Left err
-    Right (passed, used) -> return $ Right state {cddb = deleteRulesFromCDDB (cddb state) $ map fst used, currentRules = passed}
+    Right (passed, used, _) -> return $ Right state {cddb = deleteRulesFromCDDB (cddb state) $ map fst used, currentRules = passed}
 
 cmdWriteRules :: FilterRules -> Command
 cmdWriteRules f args state = case f args (currentRules state) of
     Left err -> return $ Left err
-    Right (_, used) -> return $ Right state {cddb = addRulesToCDDB (cddb state) used}
+    Right (_, used, _) -> return $ Right state {cddb = addRulesToCDDB (cddb state) used}
 
 cmdRenewRules :: FilterRules -> Command
 cmdRenewRules f args state = case f args (currentRules state) of
     Left err -> return $ Left err
-    Right (passed, used) -> do
+    Right (passed, used, _) -> do
         uuids <- replicateM (length used) nextUUID
         return $ Right state {currentRules = passed ++ zip (map fromJust uuids) (map snd used)}
 
 filterByN :: FilterRules
-filterByN [arg] ls = case readEither arg of
+filterByN (arg:argsRest) ls = case readEither arg of
     Left err -> Left err
     Right n -> if n < 0 || n >= length ls then errOutOfRange
-        else Right (crsB ++ drop1 crsA, [head crsA])
+        else Right (crsB ++ drop1 crsA, [head crsA], argsRest)
         where
             (crsB, crsA) = splitAt n ls
 filterByN [] _ = errNotEnoughArguments
-filterByN _ _ = errTooManyArguments
 
 useAll :: FilterRules
-useAll [] ls = Right ([], ls)
-useAll _ _ = errTooManyArguments
+useAll args ls = Right ([], ls, args)
 
 cmdFilterRules :: Command
 cmdFilterRules args state =  case readEither (unwords args) of

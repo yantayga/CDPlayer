@@ -14,13 +14,13 @@ import Editor.Command.Types
 import Editor.Command.Errors
 import Editor.Command.Settings
 
-type FilterRules = Arguments -> [(RuleId, Rule)] -> Either String ([(RuleId, Rule)], [(RuleId, Rule)])
+type FilterRules = Arguments -> [(RuleId, Rule)] -> Either String ([(RuleId, Rule)], [(RuleId, Rule)], [String])
 
 runRuleCommand :: FilterRules -> CommandMap -> Command
 runRuleCommand f cmds args state =  case f args (currentRules state) of
     Left err -> return $ Left err
-    Right (passed, used) -> do
-        res <- runCommand cmds args state {currentRules = used}
+    Right (passed, used, argsRest) -> do
+        res <- runCommand cmds argsRest state {currentRules = used}
         case res of
             Left err -> return $ Left err
             Right newState -> return $ Right newState {currentRules = passed ++ currentRules newState}
