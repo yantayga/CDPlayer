@@ -29,10 +29,10 @@ runCommand :: CommandMap -> Command
 runCommand cmds args state =
     case args of
         [] -> return errNotEnoughArguments
-        (cmdName: args) ->
+        (cmdName: restArgs) ->
             case M.lookup cmdName cmds of
                 Nothing -> return $ Left $ "Command '" ++ cmdName ++ "' not found. Possible variants: " ++ findMostSimilar cmdName
-                Just (CommandDef fn _) -> fn args state
+                Just (CommandDef fn _) -> fn restArgs state
     where
         findMostSimilar cmdName = unwords $ (filter . isInfixOf) cmdName $ M.keys cmds
 

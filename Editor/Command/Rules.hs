@@ -60,15 +60,15 @@ cmdSetStop f args state = case f args (currentRules state) of
     Right (passed, used, [flagArg]) -> case readEither flagArg of
         Left err -> return $ Left err
         Right flag -> return $ Right state {currentRules = passed ++ map (mapSnd (\r -> r {stop = flag})) used}
-    Right (passed, used, []) -> return errNotEnoughArguments
-    Right (passed, used, _) -> return errTooManyArguments
+    Right (_, _, []) -> return errNotEnoughArguments
+    Right (_, _, _) -> return errTooManyArguments
 
 cmdSetDeleteNodes :: FilterRules -> Command
 cmdSetDeleteNodes f args state = case f args (currentRules state) of
     Left err -> return $ Left err
-    Right (passed, used, []) -> return errNotEnoughArguments
+    Right (_, _, []) -> return errNotEnoughArguments
     Right (passed, used, restArgs) -> case readEither (unwords restArgs) of
-        Left err -> return $ Left $ (unwords restArgs) ++ ": " ++ err
+        Left err -> return $ Left $ unwords restArgs ++ ": " ++ err
         Right list -> return $ Right state {currentRules = passed ++ map (mapSnd (\r -> r {deletedNodes = list})) used}
 
 cmdShowRules :: Command
@@ -124,7 +124,7 @@ useAll args ls = Right ([], ls, args)
 cmdFilterRules :: Command
 cmdFilterRules args state =  case readEither (unwords args) of
         Left err -> return $ Left err
-        Right tree -> printAndUpdateCurrentRules (boundRuleDesc tree) (mapSnd fst) rulesFound state
+        Right tree -> printAndUpdateCurrentRules boundRuleDesc (mapSnd fst) rulesFound state
             where
                 rulesFound = M.toList $ matchRulesAndFindPaths tree (rules $ cddb state)
 

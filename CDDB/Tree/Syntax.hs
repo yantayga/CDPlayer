@@ -12,7 +12,6 @@ import Data.List.Extra ((!?))
 import Text.ParserCombinators.ReadPrec as R
 import qualified Text.Read.Lex as L
 
-import CDDB.Types
 import CDDB.JSON
 
 type TagId = String
@@ -31,8 +30,8 @@ instance FromJSON SyntacticTree where
 
 instance Show SyntacticTree where
     show :: SyntacticTree -> String
-    show (Tag id ts) = id ++ " [" ++ intercalate ", " (map show ts) ++ "]"
-    show (Word id w) = id ++ "(" ++ show w ++ ")"
+    show (Tag tid ts) = tid ++ " [" ++ intercalate ", " (map show ts) ++ "]"
+    show (Word tid w) = tid ++ "(" ++ show w ++ ")"
 
 instance Read SyntacticTree where
     readPrec = choice [readTag, readWord]
@@ -55,14 +54,14 @@ findNode :: TreePath -> SyntacticTree -> Maybe SyntacticTree
 findNode [n] (Tag _ ts) = ts !? n
 findNode (n: ns) (Tag _ ts) = ts !? n >>= \t -> findNode ns t
 findNode [] t = Just t
-findNode _ t = Nothing
+findNode _ _ = Nothing
 
 -- Rempve node by path
 findAndRemoveNode :: TreePath -> SyntacticTree -> SyntacticTree
-findAndRemoveNode [n] t@(Tag id ts) = if null bs then t else Tag id (as ++ tail bs)
+findAndRemoveNode [n] t@(Tag tid ts) = if null bs then t else Tag tid (as ++ tail bs)
     where
         (as, bs) = splitAt n ts
-findAndRemoveNode (n: ns) t@(Tag id ts) = if null bs then t else Tag id (as ++ findAndRemoveNode ns (head bs): tail bs)
+findAndRemoveNode (n: ns) t@(Tag tid ts) = if null bs then t else Tag tid (as ++ findAndRemoveNode ns (head bs): tail bs)
     where
         (as, bs) = splitAt n ts
 findAndRemoveNode _ t = t

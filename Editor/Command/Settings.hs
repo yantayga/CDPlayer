@@ -12,7 +12,6 @@ import qualified System.Console.Haskeline as HL
 import Control.Monad.Catch (catch, SomeException)
 
 import CDDB.Tree.Syntax
-import CDDB.Runner.Runner
 import CDDB.Runner.Context
 
 data Settings = Settings {

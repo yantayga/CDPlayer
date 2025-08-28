@@ -75,5 +75,5 @@ ruleDesc (ruleId, rule) =
     "\n\tDelete nodes: " ++ show (deletedNodes rule) ++
     "\n\tStop: " ++ show (stop rule) ++ "\n"
 
-boundRuleDesc :: SyntacticTree -> (RuleId, (Rule, VariableStates)) -> String
-boundRuleDesc t (ruleId, (rule, vp)) = ruleDesc (ruleId, rule) ++ "\n\tVariable bounds:\n" ++ concat (M.map show vp)
+boundRuleDesc :: (RuleId, (Rule, VariableStates)) -> String
+boundRuleDesc (ruleId, (rule, vp)) = ruleDesc (ruleId, rule) ++ "\n\tVariable bounds:\n" ++ concat (M.map show vp)

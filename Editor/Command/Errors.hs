@@ -3,8 +3,6 @@
 
 module Editor.Command.Errors where
 
-import Data.Either
-
 errTooManyArguments   = Left "Too many arguments"
 errNotEnoughArguments = Left "Not enough arguments"
 errOutOfRange         = Left "Index out of range"

@@ -7,7 +7,6 @@ import qualified Data.Map as M
 import Data.Maybe (catMaybes)
 import Data.Either (rights)
 
-import Control.Monad (foldM)
 import Control.Monad.Extra (concatMapM)
 
 import CDDB.CDDB
@@ -16,7 +15,6 @@ import CDDB.Rules
 import CDDB.AddFact
 import CDDB.Logging
 import CDDB.DeleteNodes
-import CDDB.Utils
 import CDDB.Expression.VariableDefs
 import CDDB.Expression.Eval
 import CDDB.Expression.Constants

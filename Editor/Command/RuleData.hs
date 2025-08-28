@@ -50,8 +50,8 @@ cmdAddItem :: Read a => (([a] -> [a]) -> Rule -> Rule) -> Command
 cmdAddItem updater (arg:args) state =
     case (readEither (unwords args), readEither arg) of
         (Right action, Right n) -> return $ Right state {currentRules = map (addItem n action) (currentRules state)}
-        (_, Left err) -> return $ Left $ "1#" ++ arg ++ " " ++ (unwords args) ++ ": " ++  err
-        (Left err, _) -> return $ Left $ "2#" ++ arg ++ " " ++ (unwords args) ++ ": " ++  err
+        (_, Left err) -> return $ Left $ "1#" ++ arg ++ " " ++ unwords args ++ ": " ++  err
+        (Left err, _) -> return $ Left $ "2#" ++ arg ++ " " ++ unwords args ++ ": " ++  err
     where
         addItem n a (ruleId, rule )= (ruleId, updater (insertInNthPosition n a) rule)
 cmdAddItem _ [] _ = return errNotEnoughArguments
@@ -70,8 +70,8 @@ cmdUpdateItem :: Read a => (([a] -> [a]) -> Rule -> Rule) -> Command
 cmdUpdateItem updater (arg:args) state  =
     case (readEither (unwords args), readEither arg) of
         (Right action, Right n) -> return $ Right state {currentRules = map (replaceItem n action) (currentRules state)}
-        (Left err, _) -> return $ Left $ "1#" ++ arg ++ " " ++ (unwords args) ++ ": " ++  err
-        (_, Left err) -> return $ Left $ "2#" ++ arg ++ " " ++ (unwords args) ++ ": " ++  err
+        (Left err, _) -> return $ Left $ "1#" ++ arg ++ " " ++ unwords args ++ ": " ++  err
+        (_, Left err) -> return $ Left $ "2#" ++ arg ++ " " ++ unwords args ++ ": " ++  err
     where
         replaceItem n a (ruleId, rule) = (ruleId, updater (updateNthElement n a) rule)
 cmdUpdateItem _ [] _ = return errNotEnoughArguments

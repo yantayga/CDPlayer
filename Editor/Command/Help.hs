@@ -6,7 +6,6 @@ module Editor.Command.Help where
 import qualified Data.Map as M
 
 import Editor.Command.Types
-import Editor.Command.Common
 
 cmdHelp :: CommandMap -> Command
 cmdHelp cmds args _ = return $ Left $ M.foldrWithKey (addCommandHelp args) "Commands:\nType <command> help for command help\n" cmds

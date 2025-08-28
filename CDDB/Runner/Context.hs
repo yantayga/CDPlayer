@@ -3,7 +3,6 @@
 
 module CDDB.Runner.Context where
 
-import CDDB.Types
 import CDDB.CDDB
 import CDDB.Logging
 import CDDB.Rules

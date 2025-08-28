@@ -3,7 +3,6 @@
 
 module Editor.Command.Runner  where
 
-import qualified Data.Map as M
 import Text.Read (readEither)
 
 import CDDB.Logging

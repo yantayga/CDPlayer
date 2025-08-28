@@ -10,7 +10,6 @@ import CDDB.CDDB
 import CDDB.Templates
 
 import Editor.Command.Types
-import Editor.Command.Common
 import Editor.Command.Errors
 import Editor.Command.Help
 
