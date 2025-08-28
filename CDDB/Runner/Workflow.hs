@@ -58,6 +58,7 @@ matchRules t rules = M.elems $ matchRulesAndFindPaths t rules
 runWorkflow :: Rule -> Context -> WorkFlowResult
 runWorkflow rule ctx = applySteps ctx $ map ($ rule) ruleWorkflow
 
+applySteps :: Context -> [Context -> WorkFlowResult] -> WorkFlowResult
 applySteps ctx = foldl runStep (Right [ctx])
     where
         runStep :: WorkFlowResult -> (Context -> WorkFlowResult) -> WorkFlowResult
