@@ -14,7 +14,7 @@ hmm hmmData es = unpackResult hmmData $ maximumBy (compare `on` snd) $ evalHMM h
         ies = emissionsToIndexes hmmData es
 
 evalHMM :: Num p => HMMDataT h e p -> [Int] -> [HMMIndexedResultT p]
-evalHMM hmmData ies = foldl (stepHMM hmmData) [([startState hmmData], initialProbability hmmData)] ies
+evalHMM hmmData = foldl (stepHMM hmmData) [([startState hmmData], initialProbability hmmData)]
 
 stepHMM :: Num p => HMMDataT h e p -> [HMMIndexedResultT p] -> Int -> [HMMIndexedResultT p]
 stepHMM hmmData ps ie = concatMap (stepHMMForOneEmission hmmData ie) ps
@@ -24,6 +24,6 @@ stepHMMForOneEmission hmmData ie (ihs@(ih1:_), p) = map addProbabilities newIhs
    where
         newIhs = [0 .. hiddenStatesSize hmmData]
         addProbabilities ih2 = (ih2:ihs, p * ph2h ih1 ih2 * ph2e ih1 ie)
-        ph2h ih1 ih2 = transition hmmData ih1 ih2
-        ph2e ih2 ie = emission hmmData ih2 ie
+        ph2h = transition hmmData
+        ph2e = emission hmmData
 stepHMMForOneEmission ds e ps = error "Empty input state"

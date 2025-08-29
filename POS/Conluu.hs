@@ -84,13 +84,13 @@ parseConluuSentense d ss = case (lookup "text" params, parseWords d wordsLines) 
 mapTuple2 f (a,b) = (f a, f b)
 
 parseWords :: ConluuData -> [String] -> Maybe (ConluuData, [ConluuWord])
-parseWords d ss = foldM parseWord (d, []) ss
+parseWords d = foldM parseWord (d, [])
 
 parseWord :: (ConluuData, [ConluuWord]) -> String -> Maybe (ConluuData, [ConluuWord])
 parseWord (d, ws) s = do
     return (
         d {fullWords = fws, initialWords = iws, uPOSTags = upts, xPOSTags = xpts, featureNames = fnis, featureValues = fvis},
-        (ConluuWord (read wid1, 0) wIdx iwIdx optIdx xptIdx ifs $ concat misc): ws
+        ConluuWord (read wid1, 0) wIdx iwIdx optIdx xptIdx ifs (concat misc): ws
         )
     where
         (wid: w: iw: opt: xpt: fs:_: _: _: misc) = split (== '\t') s

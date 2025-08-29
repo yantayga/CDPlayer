@@ -1,4 +1,4 @@
-{-# LANGUAGE NoGeneralizedNewtypeDeriving, DerivingStrategies, OverloadedStrings #-}
+{-# LANGUAGE NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 
 module POS.HMM.Types where
 
@@ -24,22 +24,22 @@ data HMMResultT h p = HMMResultT {
     } deriving (Show)
 
 transition :: HMMDataT h e p -> Int -> Int -> p
-transition d ix1 ix2 = (hidden2hidden d) V.! (ix2 + ix1 * hiddenStatesSize d)
+transition d ix1 ix2 = hidden2hidden d V.! (ix2 + ix1 * hiddenStatesSize d)
 
 emission :: HMMDataT h e p -> Int -> Int -> p
-emission d ixh ixe = (hidden2emission d) V.! (ixh + ixe * hiddenStatesSize d)
+emission d ixh ixe = hidden2emission d V.! (ixh + ixe * hiddenStatesSize d)
 
 emissionsToIndexes :: Eq e => HMMDataT h e p -> [e] -> [Int]
-emissionsToIndexes d es = map (fromMaybe (-1) . flip V.elemIndex (emissions d)) es
+emissionsToIndexes d = map (fromMaybe (-1) . flip V.elemIndex (emissions d))
 
 indexesToEmissions :: HMMDataT h e p -> [Int] -> [e]
-indexesToEmissions d ixs = map (emissions d V.!) ixs
+indexesToEmissions d = map (emissions d V.!)
 
 stateToIndexes :: Eq h => HMMDataT h e p -> [h] -> [Int]
-stateToIndexes d hs = map (fromMaybe (-1) . flip V.elemIndex (hiddenStates d)) hs
+stateToIndexes d = map (fromMaybe (-1) . flip V.elemIndex (hiddenStates d))
 
 indexesToStates :: HMMDataT h e p -> [Int] -> [h]
-indexesToStates d ixh = map (hiddenStates d V.!) ixh
+indexesToStates d = map (hiddenStates d V.!)
 
 hiddenStatesSize :: HMMDataT h e p -> Int
 hiddenStatesSize d = V.length (hiddenStates d)
