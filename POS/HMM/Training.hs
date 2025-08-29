@@ -9,7 +9,6 @@ import Data.List.Extra (drop1)
 
 import POS.HMM.Types
 import POS.HMM.Matrix
-import POS.Conluu
 
 collectHidden :: Matrix m Double => m -> [Int] -> m
 collectHidden m hs = collect m $ zip hs (drop1 hs)
@@ -28,17 +27,4 @@ normalize smoothingFactor m = imap normalizeItem m
     where
         prs = perRowSums m
         normalizeItem r c v = (v + smoothingFactor) / (prs V.! r + smoothingFactor)
-
-collectHiddensConluu :: (Fractional p, Integral p, Matrix m Double) => ConluuData -> m
-collectHiddensConluu d = foldl collectHidden (empty hiddenSize hiddenSize 0.0) hiddenStates
-    where
-        hiddenSize = M.size $ uPOSTags d
-        hiddenStates = map (map oposTag . items) $ sentences d
-
-collectEmissionsConluu :: (Fractional p, Integral p, Matrix m Double) => ConluuData -> m
-collectEmissionsConluu d = foldl collectEmissions (empty hiddenSize emissionsSize 0.0) states
-    where
-        hiddenSize = M.size $ uPOSTags d
-        emissionsSize = M.size $ fullWords d
-        states = map ((\x -> zip (map oposTag x) (map word x)). items) $ sentences d
 
