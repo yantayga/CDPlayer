@@ -3,9 +3,10 @@
 module POS.Conluu where
 
 import qualified Data.Map as M
-import Data.List (isPrefixOf, lookup, reverse)
+import Data.List ((!!), isPrefixOf, lookup, reverse)
 import Data.List.Extra (notNull, split, dropPrefix, trim)
-import Data.Maybe (catMaybes, fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe, fromJust)
+import Data.Tuple (swap)
 
 import Control.Monad (foldM)
 
@@ -59,27 +60,34 @@ parseConluu ss = parseConluuSentenses d $ lines ss
         d = ConluuData {
                 fileName = "test",
                 sentences = [],
-                fullWords = M.empty,
-                initialWords = M.empty,
-                uPOSTags = M.empty,
-                xPOSTags = M.empty,
+                fullWords = initialIndex,
+                initialWords = initialIndex,
+                uPOSTags = initialIndex,
+                xPOSTags = initialIndex,
                 featureNames = M.empty,
                 featureValues = M.empty,
                 depNames = M.empty,
                 depRelNames = M.empty ,
                 logs = ""
             }
+        initialIndex = M.fromList $ zip tagsPredefined [startTagIndex .. endTagIndex]
 
 parseConluuSentenses :: ConluuData -> [String] -> Maybe ConluuData
 parseConluuSentenses d ss = foldM parseConluuSentense d $ filter notNull $ split null ss
 
 parseConluuSentense :: ConluuData -> [String] -> Maybe ConluuData
 parseConluuSentense d ss = case (lookup "text" params, parseWords d wordsLines) of
-    (Just t, Just (d', is)) -> return d' {sentences = ConluuSentense {text = trim $ dropPrefix "=" t, items = reverse is} : sentences d'}
+    (Just t, Just (d', is)) -> return d' {
+        sentences = ConluuSentense {
+            text = trim $ dropPrefix "=" t,
+            items = serviceWord startTagIndex 0 : reverse (serviceWord endTagIndex (length is) : is)
+            } : sentences d'
+        }
     (_, _) -> return d
     where
         (header, wordsLines) = span ("#" `isPrefixOf`) ss
         params = map (mapTuple2 trim . span (/= '=') . dropPrefix "#") header
+        serviceWord ix pos = ConluuWord (pos, pos) ix ix ix ix [] (tagsPredefined !! ix)
 
 mapTuple2 f (a,b) = (f a, f b)
 
@@ -90,7 +98,7 @@ parseWord :: (ConluuData, [ConluuWord]) -> String -> Maybe (ConluuData, [ConluuW
 parseWord (d, ws) s = do
     return (
         d {fullWords = fws, initialWords = iws, uPOSTags = upts, xPOSTags = xpts, featureNames = fnis, featureValues = fvis},
-        ConluuWord (read wid1, 0) wIdx iwIdx optIdx xptIdx ifs (concat misc): ws
+        ConluuWord (read wid1, -1) wIdx iwIdx optIdx xptIdx ifs (concat misc): ws
         )
     where
         (wid: w: iw: opt: xpt: fs:_: _: _: misc) = split (== '\t') s
@@ -118,3 +126,7 @@ updateWord2IndexWith w2i s = case mix of
     where
         mix = M.lookup s w2i
         nextIx = M.size w2i
+
+tagsPredefined = ["<-start->", "<-end->"]
+startTagIndex = 0
+endTagIndex = 1

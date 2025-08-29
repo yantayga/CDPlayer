@@ -6,14 +6,16 @@ import qualified Data.Vector as V
 import Data.Maybe (fromMaybe)
 import Data.List (nub)
 
+import POS.HMM.Matrix
+
 data HMMDataT h e p = HMMDataT {
     startState :: Int,
     stopState :: Int,
     initialProbability :: p,
     hiddenStates :: V.Vector h,
     emissions :: V.Vector e,
-    hidden2hidden :: V.Vector p,
-    hidden2emission :: V.Vector p
+    hidden2hidden :: VMatrix p,
+    hidden2emission :: VMatrix p
     }
 
 type HMMIndexedResultT p = ([Int], p)
@@ -23,11 +25,11 @@ data HMMResultT h p = HMMResultT {
     probability :: p
     } deriving (Show)
 
-transition :: HMMDataT h e p -> Int -> Int -> p
-transition d ix1 ix2 = hidden2hidden d V.! (ix2 + ix1 * hiddenStatesSize d)
+transition :: Num p => HMMDataT h e p -> Int -> Int -> p
+transition d = get (hidden2hidden d)
 
-emission :: HMMDataT h e p -> Int -> Int -> p
-emission d ixh ixe = hidden2emission d V.! (ixh + ixe * hiddenStatesSize d)
+emission :: Num p => HMMDataT h e p -> Int -> Int -> p
+emission d = get (hidden2emission d)
 
 emissionsToIndexes :: Eq e => HMMDataT h e p -> [e] -> [Int]
 emissionsToIndexes d = map (fromMaybe (-1) . flip V.elemIndex (emissions d))
