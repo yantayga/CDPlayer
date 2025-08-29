@@ -28,7 +28,7 @@ instance Show Expression where
     show (UnOp op e) = show op ++ " " ++ show e
     show (BinOp op e1 e2) = "(" ++ show e1 ++ show op ++ show e2 ++ ")"
 
-instance Read Expression where -- TODO: Fix 1-1-1 parsing to (1-(1-1))
+instance Read Expression where -- TODO: Fix 1-1-1 parsing to (1-(1-1)) https://hackage.haskell.org/package/parsec-3.1.17.0/docs/Text-Parsec-Expr.html
     readPrec = readBinOp <++ readBinOpPrioritized <++ readUnOpDoubled <++ readUnOp <++ readFirstExpr
         where
             readFirstExpr = parens ( do
