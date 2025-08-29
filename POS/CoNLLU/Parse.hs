@@ -1,6 +1,6 @@
 -- Reading colluu data
 -- https://universaldependencies.org/format.html
-module POS.Conluu where
+module POS.CoNLLU.Parse where
 
 import qualified Data.Map as M
 import Data.List ((!!), isPrefixOf, lookup, reverse)
@@ -10,54 +10,12 @@ import Data.Tuple (swap)
 
 import Control.Monad (foldM)
 
-type Word2Index = M.Map String WordIndex
-type WordIndex = Int
+import POS.CoNLLU.Types
 
-data ConluuData = ConluuData {
-    fileName :: String,
-    sentences :: [ConluuSentense],
-    fullWords :: Word2Index,
-    initialWords :: Word2Index,
-    uPOSTags :: Word2Index,
-    xPOSTags :: Word2Index,
-    featureNames :: Word2Index,
-    featureValues :: Word2Index,
-    depNames :: Word2Index,
-    depRelNames :: Word2Index,
-    logs :: String
-    } deriving (Show)
-
-data ConluuSentense = ConluuSentense {
-        text :: String,
-        items :: [ConluuWord]
-    } deriving (Show)
-
-type UPOSTagIndex = WordIndex -- https://universaldependencies.org/u/pos/index.html
-type XPOSTagIndex = WordIndex
-
-type Features = [(FeatureIndex, FeatureValue)] -- https://universaldependencies.org/u/feat/index.html
-type FeatureIndex = WordIndex
-type FeatureValue = WordIndex
-
-type DepRelIndex = WordIndex -- https://universaldependencies.org/u/dep/index.html
-
-data ConluuWord = ConluuWord {
-        wordId :: (WordIndex, WordIndex),
-        word :: WordIndex,
-        initialWord :: WordIndex,
-        oposTag :: UPOSTagIndex,
-        xposTag :: XPOSTagIndex,
-        features :: Features,
---        headWord :: Maybe WordIndex,
---        depRel :: DepRelIndex,
---        deps :: [(DepRelIndex, DepRelIndex)],
-        misc :: String
-    } deriving (Show)
-
-parseConluu :: String -> Maybe ConluuData
-parseConluu ss = parseConluuSentenses d $ lines ss
+parseCoNLLU :: String -> Maybe CoNLLUData
+parseCoNLLU ss = parseCoNLLUSentenses d $ lines ss
     where
-        d = ConluuData {
+        d = CoNLLUData {
                 fileName = "test",
                 sentences = [],
                 fullWords = initialIndex,
@@ -72,13 +30,13 @@ parseConluu ss = parseConluuSentenses d $ lines ss
             }
         initialIndex = M.fromList $ zip tagsPredefined [startTagIndex .. endTagIndex]
 
-parseConluuSentenses :: ConluuData -> [String] -> Maybe ConluuData
-parseConluuSentenses d ss = foldM parseConluuSentense d $ filter notNull $ split null ss
+parseCoNLLUSentenses :: CoNLLUData -> [String] -> Maybe CoNLLUData
+parseCoNLLUSentenses d ss = foldM parseCoNLLUSentense d $ filter notNull $ split null ss
 
-parseConluuSentense :: ConluuData -> [String] -> Maybe ConluuData
-parseConluuSentense d ss = case (lookup "text" params, parseWords d wordsLines) of
+parseCoNLLUSentense :: CoNLLUData -> [String] -> Maybe CoNLLUData
+parseCoNLLUSentense d ss = case (lookup "text" params, parseWords d wordsLines) of
     (Just t, Just (d', is)) -> return d' {
-        sentences = ConluuSentense {
+        sentences = CoNLLUSentense {
             text = trim $ dropPrefix "=" t,
             items = serviceWord startTagIndex 0 : reverse (serviceWord endTagIndex (length is) : is)
             } : sentences d'
@@ -87,18 +45,18 @@ parseConluuSentense d ss = case (lookup "text" params, parseWords d wordsLines) 
     where
         (header, wordsLines) = span ("#" `isPrefixOf`) ss
         params = map (mapTuple2 trim . span (/= '=') . dropPrefix "#") header
-        serviceWord ix pos = ConluuWord (pos, pos) ix ix ix ix [] (tagsPredefined !! ix)
+        serviceWord ix pos = CoNLLUWord (pos, pos) ix ix ix ix [] (tagsPredefined !! ix)
 
 mapTuple2 f (a,b) = (f a, f b)
 
-parseWords :: ConluuData -> [String] -> Maybe (ConluuData, [ConluuWord])
+parseWords :: CoNLLUData -> [String] -> Maybe (CoNLLUData, [CoNLLUWord])
 parseWords d = foldM parseWord (d, [])
 
-parseWord :: (ConluuData, [ConluuWord]) -> String -> Maybe (ConluuData, [ConluuWord])
+parseWord :: (CoNLLUData, [CoNLLUWord]) -> String -> Maybe (CoNLLUData, [CoNLLUWord])
 parseWord (d, ws) s = do
     return (
         d {fullWords = fws, initialWords = iws, uPOSTags = upts, xPOSTags = xpts, featureNames = fnis, featureValues = fvis},
-        ConluuWord (read wid1, -1) wIdx iwIdx optIdx xptIdx ifs (concat misc): ws
+        CoNLLUWord (read wid1, -1) wIdx iwIdx optIdx xptIdx ifs (concat misc): ws
         )
     where
         (wid: w: iw: opt: xpt: fs:_: _: _: misc) = split (== '\t') s

@@ -9,10 +9,13 @@ import POS.HMM.Types
 import POS.HMM.HMM
 import POS.HMM.Viterbi
 import POS.HMM.Training
-import POS.Conluu
 
-loadConluu :: FilePath -> IO (Maybe ConluuData)
-loadConluu fn = do
+import POS.CoNLLU.Types
+import POS.CoNLLU.Parse
+import POS.CoNLLU.Training
+
+loadCoNLLU :: FilePath -> IO (Maybe CoNLLUData)
+loadCoNLLU fn = do
     content <- readFile fn
-    return $ parseConluu content
+    return $ parseCoNLLU content
 
