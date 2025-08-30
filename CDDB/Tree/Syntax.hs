@@ -19,12 +19,6 @@ type TagId = String
 type TreePos = Int
 type TreePath = [TreePos]
 
--- TODO: Rework according to X Bar -----
-data XBTree = XBTree TagId XBTree XBTree
-    | XBWord TagId String WordProperties
-    
-----------------------------------------
-
 data SyntacticTree = Tag TagId [SyntacticTree]
     | Word TagId String WordProperties
     deriving (Eq, Generic)
