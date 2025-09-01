@@ -1,6 +1,6 @@
 -- Reading colluu data
 -- https://universaldependencies.org/format.html
-module POS.CoNLLU.Parse where
+module CoNLLU.Parse where
 
 import qualified Data.Map as M
 import Data.List ((!!), isPrefixOf, lookup, reverse)
@@ -10,7 +10,7 @@ import Data.Tuple (swap)
 
 import Control.Monad (foldM)
 
-import POS.CoNLLU.Types
+import CoNLLU.Types
 
 parseCoNLLU :: String -> Maybe CoNLLUData
 parseCoNLLU ss = parseCoNLLUSentenses d $ lines ss
@@ -45,7 +45,17 @@ parseCoNLLUSentense d ss = case (lookup "text" params, parseWords d wordsLines) 
     where
         (header, wordsLines) = span ("#" `isPrefixOf`) ss
         params = map (mapTuple2 trim . span (/= '=') . dropPrefix "#") header
-        serviceWord ix pos = CoNLLUWord (pos, pos) ix ix ix ix [] (tagsPredefined !! ix)
+        serviceWord ix pos = CoNLLUWord {
+                wordId = (pos, pos),
+                word = ix,
+                initialWord = ix,
+                uposTag = ix,
+                xposTag = ix,
+                features = [],
+                depHead = -1,
+                depRel = ix,
+                misc = (tagsPredefined !! ix)
+            }
 
 mapTuple2 f (a,b) = (f a, f b)
 
@@ -55,17 +65,29 @@ parseWords d = foldM parseWord (d, [])
 parseWord :: (CoNLLUData, [CoNLLUWord]) -> String -> Maybe (CoNLLUData, [CoNLLUWord])
 parseWord (d, ws) s = do
     return (
-        d {fullWords = fws, initialWords = iws, uPOSTags = upts, xPOSTags = xpts, featureNames = fnis, featureValues = fvis},
-        CoNLLUWord (read wid1, -1) wIdx iwIdx optIdx xptIdx ifs (concat misc): ws
+        d {fullWords = fws, initialWords = iws, uPOSTags = upts, xPOSTags = xpts, featureNames = fnis, featureValues = fvis, depNames = dns},
+        CoNLLUWord {
+                wordId = (read wid1, -1),
+                word = wIdx,
+                initialWord = iwIdx,
+                uposTag = optIdx,
+                xposTag = xptIdx,
+                features = ifs,
+                depHead = (read dp),
+                depRel = dnIdx,
+                misc = (unwords misc)
+            }: ws
         )
     where
-        (wid: w: iw: opt: xpt: fs:_: _: _: misc) = split (== '\t') s
+     --  (n1-n2) idx POS  XPOS features parent role
+        (wid: w: iw: opt: xpt: fs:      dp:    drole: _: misc) = split (== '\t') s
         (wid1:wid2) = split (== '-') wid
         (wIdx, fws) = updateWord2IndexWith (fullWords d) w
         (iwIdx, iws) = updateWord2IndexWith (initialWords d) iw
         (optIdx, upts) = updateWord2IndexWith (uPOSTags d) opt
         (xptIdx, xpts)  = updateWord2IndexWith (xPOSTags d) xpt
         (ifs, fnis, fvis) = parseFeatures (featureNames d, featureValues d) fs
+        (dnIdx, dns)  = updateWord2IndexWith (depNames d) drole
 
 parseFeatures :: (Word2Index, Word2Index) -> String -> (Features, Word2Index, Word2Index)
 parseFeatures (fnis, fvis) s = foldl update ([], fnis, fvis) pairs

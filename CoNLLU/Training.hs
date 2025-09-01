@@ -1,7 +1,7 @@
 {-# LANGUAGE NoGeneralizedNewtypeDeriving, DerivingStrategies, AllowAmbiguousTypes #-}
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-module POS.CoNLLU.Training where
+module CoNLLU.Training where
 
 import qualified Data.Map as M
 
@@ -9,7 +9,7 @@ import POS.HMM.Types
 import POS.HMM.Matrix
 import POS.HMM.Training
 
-import POS.CoNLLU.Types
+import CoNLLU.Types
 
 collectHiddensCoNLLU :: (Fractional p, Matrix m Double) => CoNLLUData -> m
 collectHiddensCoNLLU d = foldl collectHidden (empty hiddenSize hiddenSize 0.0) hiddenStates

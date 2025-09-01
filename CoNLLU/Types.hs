@@ -1,4 +1,4 @@
-module POS.CoNLLU.Types where
+module CoNLLU.Types where
 
 import qualified Data.Map as M
 
@@ -40,8 +40,7 @@ data CoNLLUWord = CoNLLUWord {
         uposTag :: UPOSTagIndex,
         xposTag :: XPOSTagIndex,
         features :: Features,
---        headWord :: Maybe WordIndex,
---        depRel :: DepRelIndex,
---        deps :: [(DepRelIndex, DepRelIndex)],
+        depHead :: WordIndex,
+        depRel :: DepRelIndex,
         misc :: String
     } deriving (Show)
