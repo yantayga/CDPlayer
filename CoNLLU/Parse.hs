@@ -7,12 +7,11 @@ import qualified Data.Text as T
 import qualified Data.Text.Read as TR
 import qualified Data.Map.Strict as M
 import qualified Data.Vector.Strict as V
-import Data.List ((!!), isPrefixOf, lookup, reverse)
-import Data.List.Extra (notNull, split)
-import Data.Maybe (catMaybes, fromMaybe, fromJust)
+import Data.List (group)
+import Data.List.Extra (split, replace)
+import Data.Maybe (fromMaybe)
 import Data.Either (fromRight)
-import Data.Tuple (swap)
-import Data.Char (toUpper, toLower)
+import Data.Char (isDigit)
 
 import Control.Monad (foldM)
 import Control.DeepSeq
@@ -75,8 +74,8 @@ parseWord (d, ws) s = if tabsCount < 9 then Just (d, ws) else do
      --  (n1-n2) idx POS  XPOS features parent role
         (wid: w: iw: opt: xpt: fs:      dp:    drole: _: misc) = T.split (== '\t') s
         (wid1:wid2) = T.split (== '-') wid
-        (wIdx, fws) = updateWord2IndexWith (fullWords d) w id
-        (iwIdx, iws) = updateWord2IndexWith (initialWords d) iw id
+        (wIdx, fws) = updateWord2IndexWith (fullWords d) (filterNums w) id
+        (iwIdx, iws) = updateWord2IndexWith (initialWords d) (filterNums iw) id
         (optIdx, upts) = updateWord2IndexWith (uPOSTags d) opt T.toUpper
         (xptIdx, xpts)  = updateWord2IndexWith (xPOSTags d) xpt T.toUpper
         (ifs, fnis, fvis) = parseFeatures (featureNames d, featureValues d) fs
@@ -92,6 +91,7 @@ parseWord (d, ws) s = if tabsCount < 9 then Just (d, ws) else do
                 depRel = dnIdx,
                 misc = (T.unwords misc)
             }
+        filterNums w = T.concat $ replace [""] ["<N>"] $ map head $ group $ T.split isDigit w
 
 parseFeatures :: (Word2Index, Word2Index) -> T.Text -> (Features, Word2Index, Word2Index)
 parseFeatures (fnis, fvis) s = foldl' update ([], fnis, fvis) pairs
