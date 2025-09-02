@@ -1,23 +1,28 @@
+{-# LANGUAGE NoGeneralizedNewtypeDeriving, DerivingStrategies, OverloadedStrings #-}
 -- Reading colluu data
 -- https://universaldependencies.org/format.html
 module CoNLLU.Parse where
 
-import qualified Data.Map as M
+import qualified Data.Text as T
+import qualified Data.Text.Read as TR
+import qualified Data.Map.Strict as M
+import qualified Data.Vector.Strict as V
 import Data.List ((!!), isPrefixOf, lookup, reverse)
-import Data.List.Extra (notNull, split, dropPrefix, trim)
+import Data.List.Extra (notNull, split)
 import Data.Maybe (catMaybes, fromMaybe, fromJust)
+import Data.Either (fromRight)
 import Data.Tuple (swap)
+import Data.Char (toUpper, toLower)
 
 import Control.Monad (foldM)
+import Control.DeepSeq
 
 import CoNLLU.Types
 
-parseCoNLLU :: String -> Maybe CoNLLUData
-parseCoNLLU ss = parseCoNLLUSentenses d $ lines ss
-    where
-        d = CoNLLUData {
-                fileName = "test",
-                sentences = [],
+emptyDB :: CoNLLUData
+emptyDB = CoNLLUData {
+                fileName = "",
+                sentences = V.empty,
                 fullWords = initialIndex,
                 initialWords = initialIndex,
                 uPOSTags = initialIndex,
@@ -25,88 +30,84 @@ parseCoNLLU ss = parseCoNLLUSentenses d $ lines ss
                 featureNames = M.empty,
                 featureValues = M.empty,
                 depNames = M.empty,
-                depRelNames = M.empty ,
-                logs = ""
+                depRelNames = M.empty,
+                startWord = snd startTag,
+                endWord = snd endTag
             }
-        initialIndex = M.fromList $ zip tagsPredefined [startTagIndex .. endTagIndex]
-
-parseCoNLLUSentenses :: CoNLLUData -> [String] -> Maybe CoNLLUData
-parseCoNLLUSentenses d ss = foldM parseCoNLLUSentense d $ filter notNull $ split null ss
-
-parseCoNLLUSentense :: CoNLLUData -> [String] -> Maybe CoNLLUData
-parseCoNLLUSentense d ss = case (lookup "text" params, parseWords d wordsLines) of
-    (Just t, Just (d', is)) -> return d' {
-        sentences = CoNLLUSentense {
-            text = trim $ dropPrefix "=" t,
-            items = serviceWord startTagIndex 0 : reverse (serviceWord endTagIndex (length is) : is)
-            } : sentences d'
-        }
-    (_, _) -> return d
     where
-        (header, wordsLines) = span ("#" `isPrefixOf`) ss
-        params = map (mapTuple2 trim . span (/= '=') . dropPrefix "#") header
-        serviceWord ix pos = CoNLLUWord {
-                wordId = (pos, pos),
-                word = ix,
-                initialWord = ix,
-                uposTag = ix,
-                xposTag = ix,
-                features = [],
-                depHead = -1,
-                depRel = ix,
-                misc = (tagsPredefined !! ix)
-            }
+        initialIndex = M.fromList tagsPredefined
+
+startTag = ("<-start->", 0)
+endTag = ("<-end->", 1)
+tagsPredefined = [startTag, endTag]
+
+parseCoNLLU :: CoNLLUData -> T.Text -> Maybe CoNLLUData
+parseCoNLLU d ss = parseCoNLLUSentenses d $ T.lines ss
+
+parseCoNLLUSentenses :: CoNLLUData -> [T.Text] -> Maybe CoNLLUData
+parseCoNLLUSentenses d ss = foldM parseCoNLLUSentense d $ filter (not . null) $ split T.null ss
+
+parseCoNLLUSentense :: CoNLLUData -> [T.Text] -> Maybe CoNLLUData
+parseCoNLLUSentense d ss = force $ case parseWords d wordsLines of
+    Just (d', !is) -> return d' {
+        sentences = V.cons (CoNLLUSentense {
+            text = T.strip $ dropTextPrefix "=" $ fromMaybe "" (lookup "text" params),
+            items = V.fromList $ reverse is
+            }) (sentences d')
+        }
+    Nothing -> return d
+    where
+        (header, wordsLines) = span ("#" `T.isPrefixOf`) ss
+        params = map (mapTuple2 T.strip . T.span (/= '=') . dropTextPrefix "#") header
 
 mapTuple2 f (a,b) = (f a, f b)
 
-parseWords :: CoNLLUData -> [String] -> Maybe (CoNLLUData, [CoNLLUWord])
+parseWords :: CoNLLUData -> [T.Text] -> Maybe (CoNLLUData, [CoNLLUWord])
 parseWords d = foldM parseWord (d, [])
 
-parseWord :: (CoNLLUData, [CoNLLUWord]) -> String -> Maybe (CoNLLUData, [CoNLLUWord])
-parseWord (d, ws) s = do
+parseWord :: (CoNLLUData, [CoNLLUWord]) -> T.Text -> Maybe (CoNLLUData, [CoNLLUWord])
+parseWord (d, ws) s = if tabsCount < 9 then Just (d, ws) else do
     return (
-        d {fullWords = fws, initialWords = iws, uPOSTags = upts, xPOSTags = xpts, featureNames = fnis, featureValues = fvis, depNames = dns},
-        CoNLLUWord {
-                wordId = (read wid1, -1),
+        d {fullWords = fws, initialWords = iws, uPOSTags = upts, xPOSTags = xpts, featureNames = fnis, featureValues = fvis, depNames = dns}, newWord: ws
+        )
+    where
+        tabsCount = length $ filter (== '\t') $ T.unpack s
+     --  (n1-n2) idx POS  XPOS features parent role
+        (wid: w: iw: opt: xpt: fs:      dp:    drole: _: misc) = T.split (== '\t') s
+        (wid1:wid2) = T.split (== '-') wid
+        (wIdx, fws) = updateWord2IndexWith (fullWords d) w id
+        (iwIdx, iws) = updateWord2IndexWith (initialWords d) iw id
+        (optIdx, upts) = updateWord2IndexWith (uPOSTags d) opt T.toUpper
+        (xptIdx, xpts)  = updateWord2IndexWith (xPOSTags d) xpt T.toUpper
+        (ifs, fnis, fvis) = parseFeatures (featureNames d, featureValues d) fs
+        (dnIdx, dns)  = updateWord2IndexWith (depNames d) drole T.toLower
+        newWord = CoNLLUWord {
+                wordId = (fst $ fromRight (0,"") $ TR.decimal wid1, -1),
                 word = wIdx,
                 initialWord = iwIdx,
                 uposTag = optIdx,
                 xposTag = xptIdx,
                 features = ifs,
-                depHead = (read dp),
+                depHead = (fst $ fromRight (0,"") $ TR.decimal dp),
                 depRel = dnIdx,
-                misc = (unwords misc)
-            }: ws
-        )
-    where
-     --  (n1-n2) idx POS  XPOS features parent role
-        (wid: w: iw: opt: xpt: fs:      dp:    drole: _: misc) = split (== '\t') s
-        (wid1:wid2) = split (== '-') wid
-        (wIdx, fws) = updateWord2IndexWith (fullWords d) w
-        (iwIdx, iws) = updateWord2IndexWith (initialWords d) iw
-        (optIdx, upts) = updateWord2IndexWith (uPOSTags d) opt
-        (xptIdx, xpts)  = updateWord2IndexWith (xPOSTags d) xpt
-        (ifs, fnis, fvis) = parseFeatures (featureNames d, featureValues d) fs
-        (dnIdx, dns)  = updateWord2IndexWith (depNames d) drole
+                misc = (T.unwords misc)
+            }
 
-parseFeatures :: (Word2Index, Word2Index) -> String -> (Features, Word2Index, Word2Index)
-parseFeatures (fnis, fvis) s = foldl update ([], fnis, fvis) pairs
+parseFeatures :: (Word2Index, Word2Index) -> T.Text -> (Features, Word2Index, Word2Index)
+parseFeatures (fnis, fvis) s = foldl' update ([], fnis, fvis) pairs
     where
-        pairs = map (span (/= '=')) $ split (== '|') s
-        update :: (Features, Word2Index, Word2Index) -> (String, String) -> (Features, Word2Index, Word2Index)
+        pairs = map (T.span (/= '=')) $ T.split (== '|') s
+        update :: (Features, Word2Index, Word2Index) -> (T.Text, T.Text) -> (Features, Word2Index, Word2Index)
         update (fs, fnis, fvis) (n, v) =
-            let (ni, fnis') = updateWord2IndexWith fnis n
-                (vi, fvis') = updateWord2IndexWith fvis $ dropPrefix "=" v
+            let (ni, fnis') = updateWord2IndexWith fnis n T.toLower
+                (vi, fvis') = updateWord2IndexWith fvis (dropTextPrefix "=" v) T.toLower
             in ((ni, vi):fs, fnis', fvis')
 
-updateWord2IndexWith :: Word2Index -> String -> (WordIndex, Word2Index)
-updateWord2IndexWith w2i s = case mix of
-    Nothing -> (nextIx, M.insert s nextIx w2i)
-    Just ix -> (ix, w2i)
+updateWord2IndexWith :: Word2Index -> T.Text -> (T.Text -> T.Text) -> (WordIndex, Word2Index)
+updateWord2IndexWith w2i s f = case M.insertLookupWithKey (\_ _ a -> a) (f s) nextIx w2i of
+        (Nothing, newMap)  -> (nextIx, newMap)
+        (Just oldval, newMap) -> (oldval, newMap)
     where
-        mix = M.lookup s w2i
         nextIx = M.size w2i
 
-tagsPredefined = ["<-start->", "<-end->"]
-startTagIndex = 0
-endTagIndex = 1
+dropTextPrefix p s = fromMaybe s $ T.stripPrefix p s

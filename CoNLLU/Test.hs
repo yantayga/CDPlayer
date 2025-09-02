@@ -1,13 +1,15 @@
 {-# LANGUAGE NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
 
-module CoNLLU.Test where
+module Main where
 
+import qualified Data.Text as T
 import qualified Data.Map as M
-import qualified Data.Vector as V
+import qualified Data.Vector.Strict as V
 import Data.Maybe
 import Data.Tree
 import Data.Tuple
 import Control.Monad
+import Control.DeepSeq
 
 import POS.HMM.Types
 import POS.HMM.HMM
@@ -16,27 +18,33 @@ import POS.HMM.Training
 
 import CoNLLU.Types
 import CoNLLU.Parse
-import CoNLLU.Training
+import CoNLLU.Load
 
-loadCoNLLU :: FilePath -> IO (Maybe CoNLLUData)
-loadCoNLLU fn = do
-    content <- readFile fn
-    return $ parseCoNLLU content
+drawDepTree m ss = drawTree $ drawDepTree' m (V.toList $ items ss) Nothing
 
-drawDepTree m ss = drawTree $ drawDepTree' m (items ss) Nothing
-
-drawDepTree' m ws w = Node {rootLabel = fromJust $ M.lookup wid m, subForest = map (drawDepTree' m ws . Just) ws'}
+drawDepTree' m ws w = Node {rootLabel = T.unpack $ fromJust $ M.lookup wid m, subForest = map (drawDepTree' m ws . Just) ws'}
     where
-        root = case w of
+        !root = case w of
             Nothing -> fst $ wordId $ head $ filter ((== 0). depHead) ws
             Just w' -> fst $ wordId w'
-        wid = word (ws !! root)
-        ws' = filter ((== root). depHead) ws
+        !wid = word (ws !! root)
+        !ws' = filter ((== root). depHead) ws
 
-printSentences db ss = mapM_ (putStrLn . drawDepTree m) $ take 10 ss
+printSentences db ss = do
+    mapM_ (\(k, v) -> putStr (show k ++ ":") >> putStrLn (T.unpack v)) $ M.toList m
+    res <- stats
+    print res
     where
-        m = M.fromList $ map swap $ M.toList $ fullWords db
+        m = invertBijection $ fullWords db
+        stats = mapM_ (print . V.foldl' sumAll 0 . items) ss
+        sumAll accN w = force $ accN + word w + initialWord w + uposTag w + xposTag w + depHead w + depRel w
 
-testCONLLU = do 
-    db <- loadCoNLLU "..."
-    printSentences (fromJust db) $ sentences $ fromJust db
+invertBijection :: (Ord k, Ord v) => M.Map k v -> M.Map v k
+invertBijection = M.foldrWithKey (flip M.insert) M.empty
+
+main = do
+    (!logs, !db) <- loadDirectory emptyDB "../conllu/"
+    print "Loaded..."
+    print logs
+    printSentences db $ sentences db
+--    print db

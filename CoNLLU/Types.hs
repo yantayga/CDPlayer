@@ -1,13 +1,21 @@
+{-# LANGUAGE DeriveAnyClass, NoGeneralizedNewtypeDeriving, DerivingStrategies #-}
+
 module CoNLLU.Types where
 
-import qualified Data.Map as M
+import GHC.Generics
+import qualified Data.Map.Strict as M
+import qualified Data.Vector.Strict as V
 
-type Word2Index = M.Map String WordIndex
+import Data.Text
+
+import Control.DeepSeq
+
+type Word2Index = M.Map Text WordIndex
 type WordIndex = Int
 
 data CoNLLUData = CoNLLUData {
-    fileName :: String,
-    sentences :: [CoNLLUSentense],
+    fileName :: Text,
+    sentences :: V.Vector CoNLLUSentense,
     fullWords :: Word2Index,
     initialWords :: Word2Index,
     uPOSTags :: Word2Index,
@@ -16,13 +24,14 @@ data CoNLLUData = CoNLLUData {
     featureValues :: Word2Index,
     depNames :: Word2Index,
     depRelNames :: Word2Index,
-    logs :: String
-    } deriving (Show)
+    startWord :: WordIndex,
+    endWord :: WordIndex
+    } deriving (Show, Generic, NFData)
 
 data CoNLLUSentense = CoNLLUSentense {
-        text :: String,
-        items :: [CoNLLUWord]
-    } deriving (Show)
+        text :: Text,
+        items :: V.Vector CoNLLUWord
+    } deriving (Show, Generic, NFData)
 
 type UPOSTagIndex = WordIndex -- https://universaldependencies.org/u/pos/index.html
 type XPOSTagIndex = WordIndex
@@ -42,5 +51,5 @@ data CoNLLUWord = CoNLLUWord {
         features :: Features,
         depHead :: WordIndex,
         depRel :: DepRelIndex,
-        misc :: String
-    } deriving (Show)
+        misc :: Text
+    } deriving (Show, Generic, NFData)
