@@ -7,14 +7,7 @@ import qualified Data.Map as M
 import qualified Data.Vector.Strict as V
 import Data.Maybe
 import Data.Tree
-import Data.Tuple
-import Control.Monad
 import Control.DeepSeq
-
-import POS.HMM.Types
-import POS.HMM.HMM
-import POS.HMM.Viterbi
-import POS.HMM.Training
 
 import CoNLLU.Types
 import CoNLLU.Parse
@@ -32,15 +25,13 @@ drawDepTree' m ws w = Node {rootLabel = T.unpack $ fromJust $ M.lookup wid m, su
 
 printSentences db ss = do
     mapM_ (\(k, v) -> putStr (show k ++ ":") >> putStrLn (T.unpack v)) $ M.toList m
-    res <- stats
-    print res
+    --res <- stats
+    --print res
     where
-        m = invertBijection $ fullWords db
+        m = invertBijection $ dictWords db
         stats = mapM_ (print . V.foldl' sumAll 0 . items) ss
         sumAll accN w = force $ accN + word w + initialWord w + uposTag w + xposTag w + depHead w + depRel w
 
-invertBijection :: (Ord k, Ord v) => M.Map k v -> M.Map v k
-invertBijection = M.foldrWithKey (flip M.insert) M.empty
 
 main = do
     (!logs, !db) <- loadDirectory emptyDB "../conllu/"

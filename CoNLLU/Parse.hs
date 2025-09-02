@@ -22,34 +22,38 @@ emptyDB :: CoNLLUData
 emptyDB = CoNLLUData {
                 fileName = "",
                 sentences = V.empty,
-                fullWords = initialIndex,
-                initialWords = initialIndex,
-                uPOSTags = initialIndex,
-                xPOSTags = initialIndex,
-                featureNames = M.empty,
-                featureValues = M.empty,
-                depNames = M.empty,
-                depRelNames = M.empty,
+                dictWords = initialIndex,
+                dictWordIxs = initialIndexRev,
+                tags = initialIndex,
+                tagIxs = initialIndexRev,
                 startWord = snd startTag,
-                endWord = snd endTag
+                endWord = snd endTag,
+                unkWord = snd unkTag
             }
     where
         initialIndex = M.fromList tagsPredefined
+        initialIndexRev = invertBijection initialIndex
 
 startTag = ("<-start->", 0)
 endTag = ("<-end->", 1)
-tagsPredefined = [startTag, endTag]
+unkTag = ("<-end->", 2)
+tagsPredefined = [startTag, endTag, unkTag]
 
 parseCoNLLU :: CoNLLUData -> T.Text -> Maybe CoNLLUData
-parseCoNLLU d ss = parseCoNLLUSentenses d $ T.lines ss
+parseCoNLLU d ss = do
+    db <- parseCoNLLUSentences d $ T.lines ss
+    return db {
+        dictWordIxs = invertBijection $ dictWords db,
+        tagIxs = invertBijection $ tags db
+        }
 
-parseCoNLLUSentenses :: CoNLLUData -> [T.Text] -> Maybe CoNLLUData
-parseCoNLLUSentenses d ss = foldM parseCoNLLUSentense d $ filter (not . null) $ split T.null ss
+parseCoNLLUSentences :: CoNLLUData -> [T.Text] -> Maybe CoNLLUData
+parseCoNLLUSentences d ss = foldM parseCoNLLUSentence d $ filter (not . null) $ split T.null ss
 
-parseCoNLLUSentense :: CoNLLUData -> [T.Text] -> Maybe CoNLLUData
-parseCoNLLUSentense d ss = force $ case parseWords d wordsLines of
+parseCoNLLUSentence :: CoNLLUData -> [T.Text] -> Maybe CoNLLUData
+parseCoNLLUSentence d ss = force $ case parseWords d wordsLines of
     Just (d', !is) -> return d' {
-        sentences = V.cons (CoNLLUSentense {
+        sentences = V.cons (CoNLLUSentence {
             text = T.strip $ dropTextPrefix "=" $ fromMaybe "" (lookup "text" params),
             items = V.fromList $ reverse is
             }) (sentences d')
@@ -67,19 +71,19 @@ parseWords d = foldM parseWord (d, [])
 parseWord :: (CoNLLUData, [CoNLLUWord]) -> T.Text -> Maybe (CoNLLUData, [CoNLLUWord])
 parseWord (d, ws) s = if tabsCount < 9 then Just (d, ws) else do
     return (
-        d {fullWords = fws, initialWords = iws, uPOSTags = upts, xPOSTags = xpts, featureNames = fnis, featureValues = fvis, depNames = dns}, newWord: ws
+        d {dictWords = fws', tags = tis'''}, newWord: ws
         )
     where
         tabsCount = length $ filter (== '\t') $ T.unpack s
      --  (n1-n2) idx POS  XPOS features parent role
         (wid: w: iw: opt: xpt: fs:      dp:    drole: _: misc) = T.split (== '\t') s
         (wid1:wid2) = T.split (== '-') wid
-        (wIdx, fws) = updateWord2IndexWith (fullWords d) (filterNums w) id
-        (iwIdx, iws) = updateWord2IndexWith (initialWords d) (filterNums iw) id
-        (optIdx, upts) = updateWord2IndexWith (uPOSTags d) opt T.toUpper
-        (xptIdx, xpts)  = updateWord2IndexWith (xPOSTags d) xpt T.toUpper
-        (ifs, fnis, fvis) = parseFeatures (featureNames d, featureValues d) fs
-        (dnIdx, dns)  = updateWord2IndexWith (depNames d) drole T.toLower
+        (wIdx, fws) = updateWord2IndexWith (dictWords d) (filterNums w) id
+        (iwIdx, fws') = updateWord2IndexWith fws (filterNums iw) id
+        (optIdx, tis) = updateWord2IndexWith (tags d) opt T.toUpper
+        (xptIdx, tis')  = updateWord2IndexWith tis xpt T.toUpper
+        (ifs, tis'') = parseFeatures tis' fs
+        (dnIdx, tis''')  = updateWord2IndexWith tis'' drole T.toLower
         newWord = CoNLLUWord {
                 wordId = (fst $ fromRight (0,"") $ TR.decimal wid1, -1),
                 word = wIdx,
@@ -93,15 +97,15 @@ parseWord (d, ws) s = if tabsCount < 9 then Just (d, ws) else do
             }
         filterNums w = T.concat $ replace [""] ["<N>"] $ map head $ group $ T.split isDigit w
 
-parseFeatures :: (Word2Index, Word2Index) -> T.Text -> (Features, Word2Index, Word2Index)
-parseFeatures (fnis, fvis) s = foldl' update ([], fnis, fvis) pairs
+parseFeatures :: Word2Index -> T.Text -> (Features, Word2Index)
+parseFeatures tis s = foldl' update ([], tis) pairs
     where
         pairs = map (T.span (/= '=')) $ T.split (== '|') s
-        update :: (Features, Word2Index, Word2Index) -> (T.Text, T.Text) -> (Features, Word2Index, Word2Index)
-        update (fs, fnis, fvis) (n, v) =
-            let (ni, fnis') = updateWord2IndexWith fnis n T.toLower
-                (vi, fvis') = updateWord2IndexWith fvis (dropTextPrefix "=" v) T.toLower
-            in ((ni, vi):fs, fnis', fvis')
+        update :: (Features, Word2Index) -> (T.Text, T.Text) -> (Features, Word2Index)
+        update (fs, tis) (n, v) =
+            let (ni, tis') = updateWord2IndexWith tis n T.toLower
+                (vi, tis'') = updateWord2IndexWith tis' (dropTextPrefix "=" v) T.toLower
+            in ((ni, vi):fs, tis'')
 
 updateWord2IndexWith :: Word2Index -> T.Text -> (T.Text -> T.Text) -> (WordIndex, Word2Index)
 updateWord2IndexWith w2i s f = case M.insertLookupWithKey (\_ _ a -> a) (f s) nextIx w2i of
@@ -111,3 +115,6 @@ updateWord2IndexWith w2i s f = case M.insertLookupWithKey (\_ _ a -> a) (f s) ne
         nextIx = M.size w2i
 
 dropTextPrefix p s = fromMaybe s $ T.stripPrefix p s
+
+invertBijection :: Word2Index -> Index2Word
+invertBijection = M.foldrWithKey (flip M.insert) M.empty

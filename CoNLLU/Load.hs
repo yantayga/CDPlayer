@@ -3,6 +3,7 @@
 module CoNLLU.Load where
 
 import qualified Data.Text as T
+import qualified Data.Map.Strict as M
 import qualified Data.Text.IO as TIO
 
 import System.Directory (canonicalizePath, doesDirectoryExist, doesFileExist, listDirectory)
@@ -12,6 +13,7 @@ import Control.Monad (foldM)
 
 import CoNLLU.Types
 import CoNLLU.Parse
+import CoNLLU.Merge
 
 loadCoNLLU :: CoNLLUData -> FilePath -> IO (Maybe CoNLLUData)
 loadCoNLLU db fn = do
@@ -39,3 +41,4 @@ loadDirectory db fp = do
                 sfs <- mapM (getFiles . combine fp') fs
                 return $ concat sfs
             else if ef then return [fp'] else return []
+

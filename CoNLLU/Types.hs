@@ -11,26 +11,28 @@ import Data.Text
 import Control.DeepSeq
 
 type Word2Index = M.Map Text WordIndex
+type Index2Word = M.Map WordIndex Text
 type WordIndex = Int
+
+type CoNLLUSentences = V.Vector CoNLLUSentence
 
 data CoNLLUData = CoNLLUData {
     fileName :: Text,
-    sentences :: V.Vector CoNLLUSentense,
-    fullWords :: Word2Index,
-    initialWords :: Word2Index,
-    uPOSTags :: Word2Index,
-    xPOSTags :: Word2Index,
-    featureNames :: Word2Index,
-    featureValues :: Word2Index,
-    depNames :: Word2Index,
-    depRelNames :: Word2Index,
+    sentences :: CoNLLUSentences,
+    dictWords :: Word2Index,
+    dictWordIxs :: Index2Word,
+    tags :: Word2Index,
+    tagIxs :: Index2Word,
     startWord :: WordIndex,
-    endWord :: WordIndex
+    endWord :: WordIndex,
+    unkWord :: WordIndex
     } deriving (Show, Generic, NFData)
 
-data CoNLLUSentense = CoNLLUSentense {
+type CoNLLUWords = V.Vector CoNLLUWord
+
+data CoNLLUSentence = CoNLLUSentence {
         text :: Text,
-        items :: V.Vector CoNLLUWord
+        items :: CoNLLUWords
     } deriving (Show, Generic, NFData)
 
 type UPOSTagIndex = WordIndex -- https://universaldependencies.org/u/pos/index.html
