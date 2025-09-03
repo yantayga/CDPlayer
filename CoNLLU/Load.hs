@@ -10,6 +10,8 @@ import System.Directory (canonicalizePath, doesDirectoryExist, doesFileExist, li
 import System.FilePath (combine)
 
 import Control.Monad (foldM)
+import Control.DeepSeq
+import Control.Parallel.Strategies
 
 import CoNLLU.Types
 import CoNLLU.Parse
@@ -20,17 +22,19 @@ loadCoNLLU db fn = do
     content <- TIO.readFile fn
     return $ parseCoNLLU (db {fileName = T.pack fn}) content
 
-loadDirectory :: CoNLLUData -> FilePath -> IO ([T.Text], CoNLLUData)
-loadDirectory db fp = do
+loadDirectory :: FilePath -> IO CoNLLUData
+loadDirectory fp = do
     fs <- getFiles fp
-    foldM loadCoNLLUWithLog (emptyLog, db) fs
+    res <- loadParallel fs
+    res2 <- sequenceA res
+    return $ mergeData res2
     where
-        emptyLog = [""]
-        loadCoNLLUWithLog (logs, db) fn = do
+        loadParallel fs = map (loadCoNLLUWithLog emptyDB) fs `usingIO` parList rseq
+        loadCoNLLUWithLog db fn = do
             maybeDB <- loadCoNLLU db fn
             return $ case maybeDB of
-                Nothing -> (T.pack ("Failed to load " ++ fn): logs, db)
-                Just db' -> (logs, db')
+                Nothing -> db
+                Just db' -> db'
         getFiles fp  = do
             fp' <- canonicalizePath fp
             ed <- doesDirectoryExist fp'

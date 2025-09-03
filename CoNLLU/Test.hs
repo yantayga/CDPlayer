@@ -13,7 +13,7 @@ import CoNLLU.Types
 import CoNLLU.Parse
 import CoNLLU.Load
 
-drawDepTree m ss = drawTree $ drawDepTree' m (V.toList $ items ss) Nothing
+drawDepTree m ss = drawTree $ drawDepTree' m (V.toList (items ss)) Nothing
 
 drawDepTree' m ws w = Node {rootLabel = T.unpack $ fromJust $ M.lookup wid m, subForest = map (drawDepTree' m ws . Just) ws'}
     where
@@ -34,8 +34,7 @@ printSentences db ss = do
 
 
 main = do
-    (!logs, !db) <- loadDirectory emptyDB "../conllu/"
+    !db <- loadDirectory "../conllu/"
     print "Loaded..."
-    print logs
     printSentences db $ sentences db
---    print db
+    print db
