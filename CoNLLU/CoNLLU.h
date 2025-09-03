@@ -64,6 +64,7 @@ struct CoNLLUDatabase
     
     WordId beginTag;
     WordId endTag;
+    WordId unkTag;
 
     void reset(void);
 

@@ -11,6 +11,10 @@
 #include <unicode/ustream.h>
 #include <unicode/locid.h>
 
+const char defStartTag[] = "<START>";
+const char defEndTag[] = "<END>";
+const char defUnkTag[] = "<UNK>";
+
 template <class Item, class Index>
 void BidirectionalMap<Item, Index>::clear(void)
 {
@@ -43,13 +47,15 @@ void CoNLLUDatabase::reset(void)
     words.clear();
     tags.clear();
     
-    beginTag = words.lookupOrInsert("<start>");
-    endTag = words.lookupOrInsert("<end>");
+    beginTag = words.lookupOrInsert(defStartTag);
+    endTag = words.lookupOrInsert(defEndTag);
+    unkTag = words.lookupOrInsert(defUnkTag);
     
-    ShortWordId beginTagT = tags.lookupOrInsert("<start>");
-    ShortWordId endTagT = tags.lookupOrInsert("<end>");
+    ShortWordId beginTagT = tags.lookupOrInsert(defStartTag);
+    ShortWordId endTagT = tags.lookupOrInsert(defEndTag);
+    ShortWordId unkTagT = tags.lookupOrInsert(defUnkTag);
     
-    assert(beginTag == beginTagT && endTag == endTagT);
+    assert(beginTag == beginTagT && endTag == endTagT && unkTag == unkTagT);
 }
 
 inline void ltrim(std::string &s)
