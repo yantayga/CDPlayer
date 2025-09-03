@@ -38,11 +38,19 @@ public:
     const Index lookupOrInsert(const Item& item);
     const Item& lookupIndex(const Index index);
 
-    void print(void)
+    void printMap(void)
     {
         for (const auto& p: item2index)
         {
             std::cout << p.first << " -> " << p.second << std::endl;
+        }
+    };
+
+    void printIndex(void)
+    {
+        for (size_t i = 0; i < index2item.size(); ++i)
+        {
+            std::cout << "[" << i << "] = " << *(index2item[i]) << std::endl;
         }
     };
 };

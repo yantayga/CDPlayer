@@ -17,9 +17,9 @@ int main(int argc, char** argv)
         std::cout << "Tags: " << db.tags.size() << std::endl;
         std::cout << "Sentences: " << db.sentences.size() << std::endl << std::endl;
 
-        db.words.print();
+        db.words.printIndex();
         std::cout << std::endl;
-        db.tags.print();
+        db.tags.printIndex();
     }
     else
     {
