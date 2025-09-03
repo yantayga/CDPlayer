@@ -1,14 +1,14 @@
 #include "CoNLLUci.h"
 #include "CoNLLU.h"
 
-__attribute__((visibility("default"))) DBHandle initCoNLLUDB()
+DBHandle initCoNLLUDB()
 {
     CoNLLUDatabase* pDB = new CoNLLUDatabase();
     pDB->reset();
     return DBHandle(pDB);
 }
 
-__attribute__((visibility("default"))) void clearCoNLLUDB(DBHandle h)
+void clearCoNLLUDB(DBHandle h)
 {
     CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
 
@@ -18,7 +18,7 @@ __attribute__((visibility("default"))) void clearCoNLLUDB(DBHandle h)
     }
 }
 
-__attribute__((visibility("default"))) bool loadFile(DBHandle h, const char* path)
+bool loadFile(DBHandle h, const char* path)
 {
     CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
 
@@ -30,7 +30,7 @@ __attribute__((visibility("default"))) bool loadFile(DBHandle h, const char* pat
     return false;
 }
 
-__attribute__((visibility("default"))) bool loadDirectory(DBHandle h, const char* path)
+bool loadDirectory(DBHandle h, const char* path)
 {
     CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
 
@@ -40,4 +40,78 @@ __attribute__((visibility("default"))) bool loadDirectory(DBHandle h, const char
     }
 
     return false;
+}
+
+char* index2word(DBHandle h, const WordId ix)
+{
+    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
+
+    if (pDB)
+    {
+        // Dirty hack, until GHC Capi provides smth for const char*
+        return (char*)pDB->index2word(ix).c_str();
+    }
+
+    return NULL;
+}
+
+WordId word2index(DBHandle h, const char* word)
+{
+    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
+
+    if (pDB)
+    {
+        return pDB->word2index(word);
+    }
+
+    return -1;
+}
+
+char* index2tag(DBHandle h, const ShortWordId ix)
+{
+    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
+
+    if (pDB)
+    {
+        // Dirty hack, until GHC Capi provides smth for const char*
+        return (char*)pDB->index2tag(ix).c_str();
+    }
+
+    return NULL;
+}
+
+ShortWordId tag2index(DBHandle h, const char* word)
+{
+    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
+
+    if (pDB)
+    {
+        return pDB->tag2index(word);
+    }
+
+    return -1;
+}
+
+size_t wordsCount(DBHandle h)
+{
+    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
+
+    if (pDB)
+    {
+        return pDB->words.size();
+    }
+
+    return -1;
+}
+
+size_t tagsCount(DBHandle h)
+{
+    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
+
+    if (pDB)
+    {
+        return pDB->tags.size();
+    }
+
+    return -1;
 }

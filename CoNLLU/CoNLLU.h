@@ -7,8 +7,8 @@
 
 #include <iostream>
 
-typedef size_t WordId;
-typedef unsigned short ShortWordId;
+#include "CoNLLUci.h"
+
 typedef std::pair<WordId, WordId> Feature;
 
 struct CoNLLUWord
@@ -33,10 +33,10 @@ class BidirectionalMap
     std::vector<const Item*> index2item;
 
 public:
-    void clear(void);
-    size_t size(void) { return index2item.size(); };
-    const Index lookupOrInsert(const Item& item);
-    const Item& lookupIndex(const Index index);
+    __attribute__((noinline)) void clear(void);
+    __attribute__((noinline)) size_t size(void) { return index2item.size(); };
+    __attribute__((noinline)) const Index lookupOrInsert(const Item& item);
+    __attribute__((noinline)) const Item& lookupIndex(const Index index);
 
     void printMap(void)
     {
@@ -61,7 +61,7 @@ struct CoNLLUDatabase
 
     BidirectionalMap<std::string, WordId> words;
     BidirectionalMap<std::string, ShortWordId> tags;
-    
+
     WordId beginTag;
     WordId endTag;
     WordId unkTag;
@@ -70,4 +70,10 @@ struct CoNLLUDatabase
 
     bool load(const std::string& fileName);
     bool loadDirectory(const std::string& directoryName);
+
+    const std::string& index2word(const WordId ix);
+    WordId word2index(const std::string& word);
+
+    const std::string& index2tag(const ShortWordId ix);
+    ShortWordId tag2index(const std::string& word);
 };

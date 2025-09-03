@@ -5,7 +5,7 @@ test-conllu:
 	gcc -Wall -Wpedantic CoNLLU/Test.c -lconllu -L. -o test-conllu
 
 test-conllu-hs: CoNLLU/*
-	ghc -no-keep-hi-files -no-keep-o-files -Wall -Wextra -lconllu -L. -O4 CoNLLU/Main.hs -o test-conllu-hs
+	ghc -no-keep-hi-files -no-keep-o-files -Wall -Wextra -lstdc++ -lconllu -L. -O4 CoNLLU/Main.hs -o test-conllu-hs
 
 all-conllu: lib-conllu test-conllu test-conllu-hs
 

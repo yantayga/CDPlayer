@@ -38,7 +38,7 @@ const Index BidirectionalMap<Item, Index>::lookupOrInsert(const Item& item)
 template <class Item, class Index>
 const Item& BidirectionalMap<Item, Index>::lookupIndex(const Index index)
 {
-    return index2item[index];
+    return *index2item[index];
 }
 
 void CoNLLUDatabase::reset(void)
@@ -46,15 +46,15 @@ void CoNLLUDatabase::reset(void)
     sentences.clear();
     words.clear();
     tags.clear();
-    
+
     beginTag = words.lookupOrInsert(defStartTag);
     endTag = words.lookupOrInsert(defEndTag);
     unkTag = words.lookupOrInsert(defUnkTag);
-    
+
     ShortWordId beginTagT = tags.lookupOrInsert(defStartTag);
     ShortWordId endTagT = tags.lookupOrInsert(defEndTag);
     ShortWordId unkTagT = tags.lookupOrInsert(defUnkTag);
-    
+
     assert(beginTag == beginTagT && endTag == endTagT && unkTag == unkTagT);
 }
 
@@ -130,7 +130,7 @@ void toLower(std::string& s)
 bool CoNLLUDatabase::load(const std::string& fileName)
 {
     std::ifstream stream(fileName, std::fstream::in);
-    
+
     if (stream.is_open())
     {
         CoNLLUSentence sentence;
@@ -221,4 +221,24 @@ bool CoNLLUDatabase::loadDirectory(const std::string& directoryName)
         }
     }
     return true;
+}
+
+const std::string& CoNLLUDatabase::index2word(const WordId ix)
+{
+    return words.lookupIndex(ix);
+}
+
+WordId CoNLLUDatabase::word2index(const std::string& word)
+{
+    return words.lookupOrInsert(word);
+}
+
+const std::string& CoNLLUDatabase::index2tag(const ShortWordId ix)
+{
+    return tags.lookupIndex(ix);
+}
+
+ShortWordId CoNLLUDatabase::tag2index(const std::string& word)
+{
+    return tags.lookupOrInsert(word);
 }
