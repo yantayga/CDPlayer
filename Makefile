@@ -1,10 +1,13 @@
-lib:
-	g++ -Wall -Wpedantic -shared -fPIC -std=c++23 CoNLLU/CoNLLU.cpp `pkg-config --libs --cflags icu-uc icu-io` -o libconllu.so
+lib-conllu:
+	g++ -Wall -Wpedantic -shared -fPIC -std=c++23 CoNLLU/CoNLLU.cpp CoNLLU/CoNLLUci.c `pkg-config --libs --cflags icu-uc icu-io` -o libconllu.so
 
-test:
-	g++ -Wall -Wpedantic -std=c++23 CoNLLU/Test.cpp -lconllu -L. -o Test
+test-conllu:
+	gcc -Wall -Wpedantic CoNLLU/Test.c -lconllu -L. -o test-conllu
 
-all: lib test
+test-conllu-hs: CoNLLU/*
+	ghc -no-keep-hi-files -no-keep-o-files -Wall -Wextra -lconllu -L. -O4 CoNLLU/Main.hs -o test-conllu-hs
+
+all-conllu: lib-conllu test-conllu test-conllu-hs
 
 editor:
 	ghc -no-keep-hi-files -no-keep-o-files -Wall -Wextra -O4 Editor/Main.hs -o editor
