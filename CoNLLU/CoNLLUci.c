@@ -67,31 +67,6 @@ WordId word2index(DBHandle h, const char* word)
     return -1;
 }
 
-char* index2tag(DBHandle h, const ShortWordId ix)
-{
-    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
-
-    if (pDB)
-    {
-        // Dirty hack, until GHC Capi provides smth for const char*
-        return (char*)pDB->index2tag(ix).c_str();
-    }
-
-    return NULL;
-}
-
-ShortWordId tag2index(DBHandle h, const char* word)
-{
-    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
-
-    if (pDB)
-    {
-        return pDB->tag2index(word);
-    }
-
-    return -1;
-}
-
 size_t wordsCount(DBHandle h)
 {
     CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
@@ -99,18 +74,6 @@ size_t wordsCount(DBHandle h)
     if (pDB)
     {
         //return pDB->words.size();
-    }
-
-    return -1;
-}
-
-size_t tagsCount(DBHandle h)
-{
-    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
-
-    if (pDB)
-    {
-        //return pDB->tags.size();
     }
 
     return -1;

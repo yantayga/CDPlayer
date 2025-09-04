@@ -14,6 +14,7 @@ int main(int argc, char** argv)
     if (loadDirectory(h, argv[1]))
     {
         printf("Success...\n");
+        printf("Words count = %ull\n", wordsCount(h));
     }
     else
     {

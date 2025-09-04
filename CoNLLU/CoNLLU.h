@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <cmath>
 #include <iostream>
+#include <cstdint>
 
 #include "CoNLLUci.h"
 
@@ -15,8 +16,7 @@ struct CoNLLUWord
 {
     WordId word;
     WordId initialWord;
-    ShortWordId uPOSTag;
-    std::vector<Feature> features;
+    WordId tags;
     size_t depHead;
     ShortWordId depRel;
     ShortWordId depRelModifier;
@@ -63,6 +63,30 @@ public:
     };
 };
 
+union CompoundTag
+{
+    struct Verbose
+    {
+        unsigned char POS: 6;
+        unsigned __int128 features : 118;
+    } coumpoundTag;
+    unsigned __int128 tag128;
+
+    bool operator==(const CompoundTag& other) const
+    {
+        return tag128 == other.tag128;
+    }
+};
+
+template <>
+struct std::hash<CompoundTag>
+{
+  std::size_t operator()(const CompoundTag& k) const
+  {
+    return std::hash<uint64_t>{}((uint64_t)k.tag128 ^ (uint64_t)(k.tag128 >> 64));
+  }
+};
+
 class CoNLLUDatabase
 {
     const BidirectionalMap<std::string, ShortWordId> posTags;
@@ -74,11 +98,12 @@ class CoNLLUDatabase
     std::vector<CoNLLUSentence> sentences;
 
     BidirectionalMap<std::string, WordId> words;
+    BidirectionalMap<CompoundTag, WordId> tags;
 
     WordId beginTag;
     WordId endTag;
     WordId unkTag;
-    
+
     size_t maxFeaturesNum;
 
 public:
@@ -91,7 +116,4 @@ public:
 
     const std::string& index2word(const WordId ix) const;
     WordId word2index(const std::string& word);
-
-    const std::string& index2tag(const ShortWordId ix) const;
-    ShortWordId tag2index(const std::string& word);
 };

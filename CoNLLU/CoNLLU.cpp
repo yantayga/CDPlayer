@@ -20,6 +20,7 @@ const std::vector<std::string> POS_TAGS = {
 // service tags
     "<start>", "<end>",
 // https://universaldependencies.org/u/pos/all.html
+    "x",      // other/url/foreign/unknown
     "adj",    // adjective
     "adp",    // adposition (prepositions and postpositions)
     "adv",    // adverb
@@ -36,7 +37,6 @@ const std::vector<std::string> POS_TAGS = {
     "sconj",  // subordinating conjunction
     "sym",    // symbol
     "verb",   // verb
-    "x",      // other/url/foreign/unknown
 };
 
 const std::vector<std::string> FEATURE_NAMES = {
@@ -86,7 +86,7 @@ const std::vector<std::string> FEATURE_VALUES = {
 
 const std::vector<std::string> DEP_RELS = {
     /* Core arguments      */ "nsubj", "obj", "iobj", "csubj", "ccomp", "xcomp",
-    /* Non-core dependents */ "obl", "vocative", "expl", "dislocated", "advcl", 
+    /* Non-core dependents */ "obl", "vocative", "expl", "dislocated", "advcl",
                               "advmod", "discourse", "aux", "cop", "mark",
     /* Nominal dependents  */ "nmod", "appos", "nummod", "acl", "amod", "det", "clf", "case",
     /* Coordination        */ "conj", "cc",
@@ -97,7 +97,7 @@ const std::vector<std::string> DEP_RELS = {
 };
 
 const std::vector<std::string> DEP_RELS_MODIFIERS = {
-    "", "outer", "pass", "agent", "arg", "lmod", "tmod", "outer", "pass", "emph", "lmod", "impers", "pass", "relcl", "poss", 
+    "", "outer", "pass", "agent", "arg", "lmod", "tmod", "outer", "pass", "emph", "lmod", "impers", "pass", "relcl", "poss",
     "pass", "tmod", "numgov", "nummod", "gov", "foreign", "name", "lvc", "prt", "redup", "svc", "pv", "relcl", "poss", "preconj",
 };
 
@@ -154,13 +154,13 @@ CoNLLUDatabase::CoNLLUDatabase()
         , maxFeaturesNum(0)
 {
     std::cout << "Bits for POS tag: " << posTags.bits() << std::endl;
-    posTags.printIndex();        
+    posTags.printIndex();
     std::cout << std::endl << "Bits for feature name: " << featureNames.bits() << std::endl;
-    featureNames.printIndex();        
+    featureNames.printIndex();
     std::cout << std::endl << "Bits for feature value: " << featureValues.bits() << std::endl;
-    featureValues.printIndex();        
+    featureValues.printIndex();
     std::cout << std::endl << "Bits for dependency relation: " << depRels.bits() << std::endl;
-    depRels.printIndex();        
+    depRels.printIndex();
     std::cout << std::endl << "Bits for dependency relation modifiers: " << depRelModifiers.bits() << std::endl;
     depRelModifiers.printIndex();\
     std::cout << std::endl;
@@ -280,14 +280,17 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                 // TODO: Filter URLs
                 CoNLLUWord word;
 
+                CompoundTag tag;
+                tag.tag128 = 0;
+
                 // skip words counter wordData[0]
 
                 filterNumbers(wordData[1]);
                 word.word = words.lookupOrInsert(wordData[1]);
                 filterNumbers(wordData[2]);
                 word.initialWord = words.lookupOrInsert(wordData[2]);
-                word.uPOSTag = posTags.lookup(fixTag(wordData[3]));
-                if (word.uPOSTag > posTags.size())
+                tag.coumpoundTag.POS = posTags.lookup(fixTag(wordData[3]));
+                if (tag.coumpoundTag.POS > posTags.size())
                 {
                     std::cout << "Unknown POS tag: '" << wordData[3] << "'" << std::endl;
                 }
@@ -299,6 +302,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
 
                 std::vector<std::string> features = split(featuresLine, '|');
                 std::sort(features.begin(), features.end());
+                size_t addedFeatures = 0;
                 for (auto featurePair: features)
                 {
                     std::string name, value;
@@ -309,21 +313,25 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                             continue;
                         }
 
-                        Feature f;
-                        f.first = featureNames.lookup(name);
-                        f.second = featureValues.lookup(value);
-                        if (f.first > featureNames.size() || f.second > featureValues.size())
+                        ShortWordId fname = featureNames.lookup(name);
+                        ShortWordId fvalue = featureValues.lookup(value);
+                        if (fname > featureNames.size() || fvalue > featureValues.size())
                         {
                             std::cout << "Unknown feature pair '" << featurePair << "' for POS tag '" << wordData[3] << "'" << std::endl;
                         }
                         else
                         {
-                            word.features.push_back(f);
+                            ++addedFeatures;
+                            tag.coumpoundTag.features =
+                                tag.coumpoundTag.features << (featureNames.bits() + featureValues.bits()) |
+                                fname << featureNames.bits() | fvalue;
                         }
                     }
-                    
-                    if (word.features.size() > maxFeaturesNum) maxFeaturesNum = word.features.size();
                 }
+                if (addedFeatures > maxFeaturesNum) maxFeaturesNum = addedFeatures;
+
+
+                word.tags = tags.lookupOrInsert(tag);
 
                 try
                 {
@@ -342,7 +350,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                         depRelMain = wordData[7];
                         depRelMod = "";
                     }
-                    
+
                     ShortWordId depRel = depRels.lookup(depRelMain);
                     if (depRel > depRels.size())
                     {
@@ -352,7 +360,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                     {
                         word.depRel = depRel;
                     }
-                    
+
                     ShortWordId depRelModifier = depRelModifiers.lookup(depRelMod);
                     if (depRelModifier > depRelModifiers.size())
                     {
@@ -373,7 +381,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
               << ", bits per features = " << maxFeaturesNum * (featureNames.bits() + featureValues.bits())
               << ", overall bits per word tags = " << posTags.bits() + maxFeaturesNum * (featureNames.bits() + featureValues.bits()) << std::endl;
 
-    
+
     return false;
 }
 
@@ -403,14 +411,4 @@ const std::string& CoNLLUDatabase::index2word(const WordId ix) const
 WordId CoNLLUDatabase::word2index(const std::string& word)
 {
     return words.lookupOrInsert(word);
-}
-
-const std::string& CoNLLUDatabase::index2tag(const ShortWordId ix) const
-{
-    return ""; //tags.lookupIndex(ix);
-}
-
-ShortWordId CoNLLUDatabase::tag2index(const std::string& word)
-{
-    return 0; //tags.lookupOrInsert(word);
 }

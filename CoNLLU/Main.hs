@@ -12,8 +12,6 @@ main = do
         putStrLn "Success..."
         wc <- wordsCount h
         putStrLn ("Words: " ++ show wc)
-        tc <- tagsCount h
-        putStrLn ("Tags: " ++ show tc)
     else
         putStrLn "Failed"
     clearCoNLLUDB h
