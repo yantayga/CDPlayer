@@ -42,6 +42,30 @@ bool loadDirectory(DBHandle h, const char* path)
     return false;
 }
 
+bool loadBinary(DBHandle h, const char* path)
+{
+    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
+
+    if (pDB)
+    {
+        return pDB->loadBinary(path);
+    }
+
+    return false;
+}
+
+bool saveBinary(DBHandle h, const char* path)
+{
+    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
+
+    if (pDB)
+    {
+        return pDB->saveBinary(path);
+    }
+
+    return false;
+}
+
 char* index2word(DBHandle h, const WordId ix)
 {
     CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;

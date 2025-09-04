@@ -11,6 +11,8 @@ type DBHandle = Ptr ()
 foreign import capi "CoNLLUci.h initCoNLLUDB" initCoNLLUDB :: IO DBHandle
 foreign import capi "CoNLLUci.h clearCoNLLUDB" clearCoNLLUDB :: DBHandle -> IO ()
 foreign import capi "CoNLLUci.h loadFile" loadFile' :: DBHandle -> CString -> IO CBool
+foreign import capi "CoNLLUci.h loadBinary" loadBinary' :: DBHandle -> CString -> IO CBool
+foreign import capi "CoNLLUci.h saveBinary" saveBinary' :: DBHandle -> CString -> IO CBool
 foreign import capi "CoNLLUci.h loadDirectory" loadDirectory' :: DBHandle -> CString -> IO CBool
 foreign import capi "CoNLLUci.h index2word" index2word' :: DBHandle -> CULong -> IO (CString)
 foreign import capi "CoNLLUci.h word2index" word2index' :: DBHandle -> CString -> IO CULong
@@ -20,6 +22,18 @@ loadFile :: DBHandle -> FilePath -> IO Bool
 loadFile h path = do
     cpath <- newCString path
     res <- loadFile' h cpath
+    return $ toBool res
+
+loadBinary :: DBHandle -> FilePath -> IO Bool
+loadBinary h path = do
+    cpath <- newCString path
+    res <- loadBinary' h cpath
+    return $ toBool res
+
+saveBinary :: DBHandle -> FilePath -> IO Bool
+saveBinary h path = do
+    cpath <- newCString path
+    res <- saveBinary' h cpath
     return $ toBool res
 
 loadDirectory :: DBHandle -> FilePath -> IO Bool

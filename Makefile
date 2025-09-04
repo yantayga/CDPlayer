@@ -1,7 +1,7 @@
-lib-conllu:
-	g++ -Wall -Wpedantic -shared -fPIC -std=c++23 CoNLLU/CoNLLU.cpp CoNLLU/CoNLLUci.c `pkg-config --libs --cflags icu-uc icu-io` -o libconllu.so
+lib-conllu: CoNLLU/CoNLLU.cpp CoNLLU/CoNLLUci.c CoNLLU/Serialize.cpp
+	g++ -Wall -Wpedantic -shared -fPIC -std=c++23 CoNLLU/CoNLLU.cpp CoNLLU/CoNLLUci.c CoNLLU/Serialize.cpp `pkg-config --libs --cflags icu-uc icu-io` -o libconllu.so
 
-test-conllu:
+test-conllu: CoNLLU/Test.c
 	gcc -Wall -Wpedantic CoNLLU/Test.c -lconllu -L. -o test-conllu
 
 test-conllu-hs: CoNLLU/*

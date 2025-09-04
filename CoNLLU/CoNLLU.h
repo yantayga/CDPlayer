@@ -21,11 +21,17 @@ struct CoNLLUWord
     size_t depHead;
     ShortWordId depRel;
     ShortWordId depRelModifier;
+
+    void saveBinary(std::ostream& stream) const;
+    bool loadBinary(std::istream& stream);
 };
 
 struct CoNLLUSentence
 {
     std::vector<CoNLLUWord> words;
+
+    void saveBinary(std::ostream& stream) const;
+    bool loadBinary(std::istream& stream);
 };
 
 template <class Item, class Index>
@@ -62,6 +68,9 @@ public:
             std::cout << "[" << i << "] = " << *(index2item[i]) << ", ";
         }
     };
+
+    void saveBinary(std::ostream& stream) const;
+    bool loadBinary(std::istream& stream);
 };
 
 union CompoundTag
@@ -69,7 +78,7 @@ union CompoundTag
     struct Verbose
     {
         unsigned char POS: 6;
-        unsigned __int128 features : 118;
+        unsigned __int128 features : 122;
     } coumpoundTag;
     unsigned __int128 tag128;
 
@@ -128,6 +137,9 @@ public:
 
     bool load(const std::string& fileName);
     bool loadDirectory(const std::string& directoryName);
+
+    bool loadBinary(const std::string& fileName);
+    bool saveBinary(const std::string& fileName) const;
 
     const std::string& index2word(const WordId ix) const;
     WordId word2index(const std::string& word);

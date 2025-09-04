@@ -14,6 +14,11 @@ int main(int argc, char** argv)
     if (loadDirectory(h, argv[1]))
     {
         printStatistics(h);
+
+        saveBinary(h, "./data.bin");
+        loadBinary(h, "./data.bin");
+        printStatistics(h);
+        saveBinary(h, "./data1.bin");
     }
     else
     {

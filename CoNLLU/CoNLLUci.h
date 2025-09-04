@@ -16,6 +16,9 @@ void clearCoNLLUDB(DBHandle h);
 bool loadFile(DBHandle h, const char* path);
 bool loadDirectory(DBHandle h, const char* path);
 
+bool loadBinary(DBHandle h, const char* path);
+bool saveBinary(DBHandle h, const char* path);
+
 char* index2word(DBHandle h, const WordId ix);
 WordId word2index(DBHandle h, const char* word);
 

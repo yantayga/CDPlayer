@@ -1,4 +1,5 @@
 #include "CoNLLU.h"
+#include "Serialize.h"
 
 #include <sstream>
 #include <fstream>
@@ -50,7 +51,7 @@ const std::vector<std::string> FEATURE_NAMES = {
     "foreign", "deixisref", "person",
     "extpos", "degree", "polite",
     /*"clusivity", */"numform", "hyph",
-    "subcat", "nametype", "style", 
+    "subcat", "nametype", "style",
     // added for short verbs/adjs
     "short",
 };
@@ -111,6 +112,52 @@ const std::vector<std::string> DEP_RELS_MODIFIERS = {
     "pass", "tmod", "numgov", "nummod", "gov", "foreign", "name", "lvc", "prt", "redup", "svc", "pv", "relcl", "poss", "preconj",
 };
 
+void CoNLLUWord::saveBinary(std::ostream& stream) const
+{
+    write(stream, word);
+    write(stream, initialWord);
+    write(stream, tags);
+    write(stream, depHead);
+    write(stream, depRel);
+    write(stream, depRelModifier);
+}
+
+bool CoNLLUWord::loadBinary(std::istream& stream)
+{
+    read(stream, word);
+    read(stream, initialWord);
+    read(stream, tags);
+    read(stream, depHead);
+    read(stream, depRel);
+    read(stream, depRelModifier);
+
+    return true;
+}
+
+void CoNLLUSentence::saveBinary(std::ostream& stream) const
+{
+    write(stream, words.size());
+    for (size_t i = 0; i < words.size(); ++i)
+    {
+        words[i].saveBinary(stream);
+    }
+}
+
+bool CoNLLUSentence::loadBinary(std::istream& stream)
+{
+    size_t size = 0;
+    read(stream, size);
+
+    words.resize(size);
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        words[i].loadBinary(stream);
+    }
+
+    return true;
+}
+
 template <class Item, class Index>
 BidirectionalMap<Item, Index>::BidirectionalMap(const std::vector<Item> items)
 {
@@ -153,6 +200,41 @@ template <class Item, class Index>
 const Item& BidirectionalMap<Item, Index>::lookupIndex(const Index index) const
 {
     return *index2item[index];
+}
+
+template <class Item, class Index>
+void BidirectionalMap<Item, Index>::saveBinary(std::ostream& stream) const
+{
+    write(stream, size());
+    for (size_t i = 0; i < index2item.size(); ++i)
+    {
+        write(stream, lookupIndex(i));
+    }
+}
+
+template <class Item, class Index>
+bool BidirectionalMap<Item, Index>::loadBinary(std::istream& stream)
+{
+    size_t size = 0;
+    read(stream, size);
+
+    index2item.resize(size);
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        Item item;
+        if (read(stream, item))
+        {
+            const auto res = item2index.try_emplace(item, i);
+            index2item[i] = &res.first->first;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 CoNLLUDatabase::CoNLLUDatabase()
@@ -415,7 +497,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                             if (!newPOS.empty()) tag.coumpoundTag.POS = posTags.lookup(newPOS);
                             continue;
                         }
-                        
+
                         ShortWordId fname = featureNames.lookup(name);
                         ShortWordId fvalue = featureValues.lookup(value);
                         if (fname > featureNames.size() || fvalue > featureValues.size())
@@ -434,7 +516,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                 if (addedFeatures > statistics.maxFeaturesNum)
                 {
                     statistics.maxFeaturesNum = addedFeatures;
-                    statistics.errors.insert("File: " + fileName + ": maximum size '" + 
+                    statistics.errors.insert("File: " + fileName + ": maximum size '" +
                                              std::to_string(statistics.maxFeaturesNum) +
                                              "' found for line '" + featuresLine + "'.");
                 }
@@ -545,6 +627,7 @@ void CoNLLUDatabase::printStatistics(void)
               << ", bits per features = " << statistics.maxFeaturesNum * (featureNames.bits() + featureValues.bits())
               << ", overall bits per word tags = " << posTags.bits() + statistics.maxFeaturesNum * (featureNames.bits() + featureValues.bits()) << std::endl;
 
+    std::cout << "Overall sentences: " << sentences.size() << "." << std::endl;
     std::cout << "Overall words: " << words.size() << "." << std::endl;
     std::cout << "Overall tags: " << tags.size() << "." << std::endl;
 
@@ -560,3 +643,72 @@ void CoNLLUDatabase::printStatistics(void)
         std::cout << error << std::endl;
     }
 }
+
+bool CoNLLUDatabase::loadBinary(const std::string& fileName)
+{
+    std::ifstream stream(fileName, std::fstream::in);
+
+    if (stream.is_open())
+    {
+        reset();
+
+        if (!readMagic(stream))
+        {
+            std::cout << "Wrong file type: " << fileName << std::endl;
+            return false;
+        }
+
+        if (!words.loadBinary(stream))
+        {
+            std::cout << "Cannot read words: " << fileName << std::endl;
+            return false;
+        }
+
+        if (!tags.loadBinary(stream))
+        {
+            std::cout << "Cannot read words: " << fileName << std::endl;
+            return false;
+        }
+
+        size_t size = 0;
+        read(stream, size);
+
+        sentences.resize(size);
+
+        for (size_t i = 0; i < size; ++i)
+        {
+            sentences[i].loadBinary(stream);
+        }
+
+        return true;
+    }
+
+    std::cout << "Could not open: " << fileName << std::endl;
+    return false;
+}
+
+bool CoNLLUDatabase::saveBinary(const std::string& fileName) const
+{
+    std::ofstream stream(fileName, std::fstream::out | std::ios::binary | std::ios::trunc);
+
+    if (stream.is_open())
+    {
+        writeMagic(stream);
+
+        words.saveBinary(stream);
+        tags.saveBinary(stream);
+
+        write(stream, sentences.size());
+
+        for (const auto& sentence: sentences)
+        {
+            sentence.saveBinary(stream);
+        }
+
+        return true;
+    }
+
+    std::cout << "Could not open: " << fileName << std::endl;
+    return false;
+}
+
