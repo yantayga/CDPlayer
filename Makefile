@@ -1,8 +1,8 @@
 lib-conllu: CoNLLU/CoNLLU.cpp CoNLLU/CoNLLUci.c CoNLLU/Serialize.cpp
-	g++ -Wall -Wpedantic -shared -fPIC -std=c++23 CoNLLU/CoNLLU.cpp CoNLLU/CoNLLUci.c CoNLLU/Serialize.cpp `pkg-config --libs --cflags icu-uc icu-io` -o libconllu.so
+	g++ -Wall -Wpedantic -shared -fPIC -std=c++23 CoNLLU/CoNLLU.cpp CoNLLU/CoNLLUci.c CoNLLU/Serialize.cpp `pkg-config --libs --cflags icu-uc icu-io` -lgzstream -lz -o libconllu.so  -g -pg
 
 test-conllu: CoNLLU/Test.c
-	gcc -Wall -Wpedantic CoNLLU/Test.c -lconllu -L. -o test-conllu
+	gcc -Wall -Wpedantic CoNLLU/Test.c -lconllu -L. -o test-conllu -g -pg
 
 test-conllu-hs: CoNLLU/*
 	ghc -no-keep-hi-files -no-keep-o-files -Wall -Wextra -lconllu -L. -O4 CoNLLU/Main.hs -o test-conllu-hs
