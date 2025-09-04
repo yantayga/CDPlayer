@@ -151,25 +151,19 @@ CoNLLUDatabase::CoNLLUDatabase()
         , featureValues(FEATURE_VALUES)
         , depRels(DEP_RELS)
         , depRelModifiers(DEP_RELS_MODIFIERS)
-        , maxFeaturesNum(0)
 {
-    std::cout << "Bits for POS tag: " << posTags.bits() << std::endl;
-    posTags.printIndex();
-    std::cout << std::endl << "Bits for feature name: " << featureNames.bits() << std::endl;
-    featureNames.printIndex();
-    std::cout << std::endl << "Bits for feature value: " << featureValues.bits() << std::endl;
-    featureValues.printIndex();
-    std::cout << std::endl << "Bits for dependency relation: " << depRels.bits() << std::endl;
-    depRels.printIndex();
-    std::cout << std::endl << "Bits for dependency relation modifiers: " << depRelModifiers.bits() << std::endl;
-    depRelModifiers.printIndex();\
-    std::cout << std::endl;
+    reset();
 }
 
 void CoNLLUDatabase::reset(void)
 {
     sentences.clear();
     words.clear();
+    tags.clear();
+
+    statistics.files.clear();
+    statistics.errors.clear();
+    statistics.maxFeaturesNum = 0;
 
     beginTag = words.lookupOrInsert(defStartTag);
     endTag = words.lookupOrInsert(defEndTag);
@@ -258,6 +252,12 @@ bool CoNLLUDatabase::load(const std::string& fileName)
 
     if (stream.is_open())
     {
+        FileStatistics st;
+
+        st.fileName = fileName;
+        st.sentencesNum = 0;
+        st.wordsNum = 0;
+
         CoNLLUSentence sentence;
         for (std::string line; std::getline(stream, line, '\n');)
         {
@@ -265,6 +265,8 @@ bool CoNLLUDatabase::load(const std::string& fileName)
             {
                 if (!sentence.words.empty())
                 {
+                    ++st.sentencesNum;
+                    st.wordsNum += sentence.words.size();
                     sentences.push_back(sentence);
                     sentence.words.clear();
                 }
@@ -292,7 +294,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                 tag.coumpoundTag.POS = posTags.lookup(fixTag(wordData[3]));
                 if (tag.coumpoundTag.POS > posTags.size())
                 {
-                    std::cout << "Unknown POS tag: '" << wordData[3] << "'" << std::endl;
+                    statistics.errors.insert("File: " + fileName + ": unknown POS tag: '" + wordData[3] + "'.");
                 }
 
                 // optional
@@ -317,7 +319,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                         ShortWordId fvalue = featureValues.lookup(value);
                         if (fname > featureNames.size() || fvalue > featureValues.size())
                         {
-                            std::cout << "Unknown feature pair '" << featurePair << "' for POS tag '" << wordData[3] << "'" << std::endl;
+                            statistics.errors.insert("File: " + fileName + ": unknown feature pair '" + featurePair + "' for POS tag '" + wordData[3] + "'.");
                         }
                         else
                         {
@@ -328,7 +330,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                         }
                     }
                 }
-                if (addedFeatures > maxFeaturesNum) maxFeaturesNum = addedFeatures;
+                if (addedFeatures > statistics.maxFeaturesNum) statistics.maxFeaturesNum = addedFeatures;
 
 
                 word.tags = tags.lookupOrInsert(tag);
@@ -354,7 +356,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                     ShortWordId depRel = depRels.lookup(depRelMain);
                     if (depRel > depRels.size())
                     {
-                        std::cout << "Unknown dependency relation '" << depRelMain << "' for POS tag '" << wordData[3] << "'" << std::endl;
+                        statistics.errors.insert("File: " + fileName + ": unknown dependency relation '" + depRelMain + "' for POS tag '" + wordData[3] + "'." );
                     }
                     else
                     {
@@ -364,7 +366,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                     ShortWordId depRelModifier = depRelModifiers.lookup(depRelMod);
                     if (depRelModifier > depRelModifiers.size())
                     {
-                        std::cout << "Unknown dependency relation modifier '" << depRelMain << ": " << depRelMod << "' for POS tag '" << wordData[3] << "'" << std::endl;
+                        statistics.errors.insert("File: " + fileName + ": unknown dependency relation modifier '" + depRelMain + ": " + depRelMod + "' for POS tag '" + wordData[3] + "'.");
                     }
                     else
                     {
@@ -375,12 +377,13 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                 sentence.words.push_back(word);
             }
         }
+
+        statistics.files.push_back(st);
     }
-
-    std::cout << "Max features num = " << maxFeaturesNum
-              << ", bits per features = " << maxFeaturesNum * (featureNames.bits() + featureValues.bits())
-              << ", overall bits per word tags = " << posTags.bits() + maxFeaturesNum * (featureNames.bits() + featureValues.bits()) << std::endl;
-
+    else
+    {
+        statistics.errors.insert("Failed to open " + fileName + ".");
+    }
 
     return false;
 }
@@ -389,6 +392,7 @@ bool CoNLLUDatabase::loadDirectory(const std::string& directoryName)
 {
     if (!std::filesystem::exists(directoryName))
     {
+        statistics.errors.insert("Failed to open " + directoryName + ".");
         return false;
     }
 
@@ -411,4 +415,40 @@ const std::string& CoNLLUDatabase::index2word(const WordId ix) const
 WordId CoNLLUDatabase::word2index(const std::string& word)
 {
     return words.lookupOrInsert(word);
+}
+
+void CoNLLUDatabase::printStatistics(void)
+{
+    std::cout << "Database statistics:" << std::endl;
+
+    std::cout << "Bits for POS tag: " << posTags.bits() << std::endl;
+    posTags.printIndex();
+    std::cout << std::endl << "Bits for feature name: " << featureNames.bits() << std::endl;
+    featureNames.printIndex();
+    std::cout << std::endl << "Bits for feature value: " << featureValues.bits() << std::endl;
+    featureValues.printIndex();
+    std::cout << std::endl << "Bits for dependency relation: " << depRels.bits() << std::endl;
+    depRels.printIndex();
+    std::cout << std::endl << "Bits for dependency relation modifiers: " << depRelModifiers.bits() << std::endl;
+    depRelModifiers.printIndex();
+    std::cout << std::endl;
+
+    std::cout << "Max features num = " << statistics.maxFeaturesNum
+              << ", bits per features = " << statistics.maxFeaturesNum * (featureNames.bits() + featureValues.bits())
+              << ", overall bits per word tags = " << posTags.bits() + statistics.maxFeaturesNum * (featureNames.bits() + featureValues.bits()) << std::endl;
+
+    std::cout << "Overall words: " << words.size() << "." << std::endl;
+    std::cout << "Overall tags: " << tags.size() << "." << std::endl;
+
+    std::cout << "Files loaded:" << std::endl;
+    for (auto& file: statistics.files)
+    {
+        std::cout << "File: " << file.fileName << ": " << file.sentencesNum << " sentences, " << file.wordsNum << " words." << std::endl;
+    }
+
+    std::cout << "Errors:" << std::endl;
+    for (auto& error: statistics.errors)
+    {
+        std::cout << error << std::endl;
+    }
 }

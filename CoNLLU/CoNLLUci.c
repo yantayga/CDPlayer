@@ -78,3 +78,13 @@ size_t wordsCount(DBHandle h)
 
     return -1;
 }
+
+void printStatistics(DBHandle h)
+{
+    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
+
+    if (pDB)
+    {
+        return pDB->printStatistics();
+    }
+}

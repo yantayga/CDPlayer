@@ -7,7 +7,8 @@ extern "C" {
 
 typedef void* DBHandle;
 typedef size_t WordId;
-typedef unsigned short ShortWordId;
+typedef unsigned short TagId;
+typedef unsigned char ShortWordId;
 
 DBHandle initCoNLLUDB();
 void clearCoNLLUDB(DBHandle h);
@@ -19,6 +20,8 @@ char* index2word(DBHandle h, const WordId ix);
 WordId word2index(DBHandle h, const char* word);
 
 size_t wordsCount(DBHandle h);
+
+void printStatistics(DBHandle h);
 
 #ifdef __cplusplus
 }

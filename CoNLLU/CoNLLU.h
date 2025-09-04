@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <cmath>
 #include <iostream>
 #include <cstdint>
@@ -16,7 +17,7 @@ struct CoNLLUWord
 {
     WordId word;
     WordId initialWord;
-    WordId tags;
+    TagId tags;
     size_t depHead;
     ShortWordId depRel;
     ShortWordId depRelModifier;
@@ -89,6 +90,22 @@ struct std::hash<CompoundTag>
 
 class CoNLLUDatabase
 {
+    struct FileStatistics
+    {
+        std::string fileName;
+        size_t sentencesNum;
+        size_t wordsNum;
+    };
+
+    struct Statistics
+    {
+        std::vector<FileStatistics> files;
+        std::unordered_set<std::string> errors;
+        size_t maxFeaturesNum;
+    };
+
+    Statistics statistics;
+
     const BidirectionalMap<std::string, ShortWordId> posTags;
     const BidirectionalMap<std::string, ShortWordId> featureNames;
     const BidirectionalMap<std::string, ShortWordId> featureValues;
@@ -98,13 +115,11 @@ class CoNLLUDatabase
     std::vector<CoNLLUSentence> sentences;
 
     BidirectionalMap<std::string, WordId> words;
-    BidirectionalMap<CompoundTag, WordId> tags;
+    BidirectionalMap<CompoundTag, TagId> tags;
 
     WordId beginTag;
     WordId endTag;
     WordId unkTag;
-
-    size_t maxFeaturesNum;
 
 public:
     CoNLLUDatabase();
@@ -116,4 +131,6 @@ public:
 
     const std::string& index2word(const WordId ix) const;
     WordId word2index(const std::string& word);
+
+    void printStatistics(void);
 };
