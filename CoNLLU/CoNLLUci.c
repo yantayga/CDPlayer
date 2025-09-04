@@ -98,7 +98,7 @@ size_t wordsCount(DBHandle h)
 
     if (pDB)
     {
-        return pDB->words.size();
+        //return pDB->words.size();
     }
 
     return -1;
@@ -110,7 +110,7 @@ size_t tagsCount(DBHandle h)
 
     if (pDB)
     {
-        return pDB->tags.size();
+        //return pDB->tags.size();
     }
 
     return -1;

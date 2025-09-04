@@ -13,6 +13,7 @@ int main(int argc, char** argv)
 
     if (loadDirectory(h, argv[1]))
     {
+        printf("Success...\n");
     }
     else
     {
