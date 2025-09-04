@@ -17,9 +17,9 @@ const char defUnkTag[] = "<UNK>";
 
 
 const std::vector<std::string> POS_TAGS = {
-// service tags
+    // Service
     "<start>", "<end>",
-// https://universaldependencies.org/u/pos/all.html
+    // https://universaldependencies.org/u/pos/all.html
     "x",      // other/url/foreign/unknown
     "adj",    // adjective
     "adp",    // adposition (prepositions and postpositions)
@@ -42,19 +42,23 @@ const std::vector<std::string> POS_TAGS = {
 const std::vector<std::string> FEATURE_NAMES = {
     "prontype", "gender", "verbform",
     "numtype", "animacy", "mood",
-    "poss", "nounclass", "tense",
+    "poss", /*"nounclass",*/ "tense",
     "reflex", "number", "aspect",
     "other", "case", "voice",
-    "abbr", "definite", "evident",
+    "abbr", "definite",/* "evident",*/
     "typo", "deixis", "polarity",
     "foreign", "deixisref", "person",
     "extpos", "degree", "polite",
-    "clusivity",
+    /*"clusivity", */"numform", "hyph",
+    "subcat", "nametype", "style", 
+    // added for short verbs/adjs
+    "short",
 };
 
 const std::vector<std::string> FEATURE_VALUES = {
     /* prontype  */ "art", "dem", "emp", "exc", "ind", "int", "neg", "prs", "rcp", "rel", "tot",
-    /* numtype   */ "card ", "dist", "frac", "mult", "ord", "range", "sets",
+    /* numtype   */ "card", "dist", "frac", "mult", "ord", "range", "sets",
+    /* numform   */ "combi", "digit", "roman", "word",
     /* poss      */ "yes",
     /* reflex    */ "yes",
     /* abbr      */ "yes",
@@ -65,23 +69,29 @@ const std::vector<std::string> FEATURE_VALUES = {
     /* animacy   */ "anim", "hum", "inan", "nhum",
     /* nounclass */ // skipped intentionally
     /* number    */ "coll", "count", "dual", "grpa", "grpl", "inv", "pauc", "plur", "ptan", "sing", "tri",
-    /* case      */ "abs", "acc", "erg", "nom",
-                    "abe", "ben", "cau", "cmp", "cns", "com", "dat", "dis", "equ", "gen", "ins", "par", "tem", "tra", "voc",
-                    "abl", "add", "ade", "all", "del", "ela", "ess", "ill", "ine", "lat", "loc", "per", "sbe", "sbl", "spl", "sub", "sup", "ter",
+    /* case      */ "nom", "gen", "dat", "acc", "abl", "ins", "voc", "par", "loc",
+//                  "abs", "ben", "cmp", "cns", "equ", "erg", "ess", "com", "lat", "ter", "tra", "cau", // skipped intentionally
+//                  "ine", "ill", "ela", "add", "ade", "all", "sup", "spl", "del", "sub", "sbe", "per", // skipped intentionally
+//                  "tem", "abe", "dis", "ine", "sbl", // skipped intentionally
     /* definite  */ "com", "cons", "def", "ind", "spec",
-    /* deixis    */ "abv", "bel", "even", "med", "nvis", "prox", "remt",
+    /* deixis    */ "abv", "bel", "even", "med", /* "nvis", */ "prox", "remt",
     /* deixisref */ "1", "2",
     /* degree    */ "abs", "aug", "cmp", "dim", "equ", "pos", "sup",
     /* verbform  */ "conv", "fin", "gdv", "ger", "inf", "part", "sup", "vnoun",
-    /* mood      */ "adm", "cnd", "des", "imp", "ind", "int", "irr", "jus", "nec", "opt", "pot", "prp", "qot", "sub",
+    /* mood      */ "cnd", "imp", "ind", "int", "pot", "sub",
+//                  "adm", "irr", "jus", "nec", "prp", "qot", "des", "opt", // skipped intentionally
     /* tense     */ "fut", "imp", "past", "pqp", "pres",
     /* aspect    */ "hab", "imp", "iter", "perf", "prog", "prosp",
-    /* voice     */ "act", "antip", "bfoc", "cau", "dir", "inv", "lfoc", "mid", "pass", "rcp",
-    /* evident   */ "fh", "nfh",
+    /* voice     */ "act", "mid", "pass", "rcp",
+//                  "antip", "bfoc", "cau", "dir", "inv", "lfoc", // skipped intentionally
+//    /* evident   */ "fh", "nfh", // skipped intentionally
     /* polarity  */ "neg", "pos",
     /* person    */ "0", "1", "2", "3", "4",
     /* polite    */ "elev", "form", "humb", "infm",
-    /* clusivity */ "ex", "in",
+//    /* clusivity */ "ex", "in", // skipped intentionally
+    /* subcat    */ "ditr", "indir", "intr", "tran",
+    /* nametype  */ "com", "geo", "giv", "nat", "oth", "pat", "pro", "prs", "sur", "zoon",
+    /* style     */ "arch", "coll", "expr", "form", "rare", "slng", "vrnc", "vulg",
 };
 
 const std::vector<std::string> DEP_RELS = {
@@ -246,6 +256,94 @@ std::string fixTag(const std::string& s)
     else return s;
 }
 
+bool fixFeatureName(std::string& s, std::string& pos)
+{
+    if (s.starts_with("form"))
+    {
+        s = "numform";
+        return true;
+    }
+    if (s.starts_with("anom"))
+    {
+        s = "typo";
+        return true;
+    }
+    if (s.starts_with("tran"))
+    {
+        s = "subcat";
+        return true;
+    }
+    if (s.starts_with("anim"))
+    {
+        s = "animacy";
+        return true;
+    }
+    if (s.starts_with("predic") || s.starts_with("decl"))
+    {
+        return false;
+    }
+    if (s.starts_with("nametype"))
+    {
+        pos = "propn";
+        return true;
+    }
+    if (s.starts_with("variant"))
+    {
+        s = "short";
+        return true;
+    }
+    return true;
+}
+
+bool fixFeatureValue(std::string& s)
+{
+    if (s.starts_with("aor") || s.starts_with("notpast"))
+    {
+        s = "pres";
+        return true;
+    }
+    if (s.starts_with("fut"))
+    {
+        s = "fut";
+        return true;
+    }
+    if (s.starts_with("tran"))
+    {
+        s = "tran";
+        return true;
+    }
+    if (s.starts_with("intr"))
+    {
+        s = "intr";
+        return true;
+    }
+    if (s.starts_with("long"))
+    {
+        s = "full";
+        return true;
+    }
+    if (s.starts_with("split") || s.starts_with("init") || s.starts_with("short"))
+    {
+        s = "yes";
+        return true;
+    }
+    if (s.starts_with("ptr"))
+    {
+        s = "pat";
+        return true;
+    }
+    if (s.starts_with("obsc"))
+    {
+        s = "vulg";
+        return true;
+    }
+    if (s == "no" || s == "full")
+    {
+        return false;
+    }
+    return true;
+}
+
 bool CoNLLUDatabase::load(const std::string& fileName)
 {
     std::ifstream stream(fileName, std::fstream::in);
@@ -294,7 +392,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                 tag.coumpoundTag.POS = posTags.lookup(fixTag(wordData[3]));
                 if (tag.coumpoundTag.POS > posTags.size())
                 {
-                    statistics.errors.insert("File: " + fileName + ": unknown POS tag: '" + wordData[3] + "'.");
+                    statistics.errors.insert("Unknown POS tag: '" + wordData[3] + "'.");
                 }
 
                 // optional
@@ -310,16 +408,19 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                     std::string name, value;
                     if (parsePair(featurePair, "=", name, value))
                     {
-                        if (name.empty() || value.empty())
+                        std::string newPOS;
+                        if (name.empty() || value.empty() || !fixFeatureName(name, newPOS)|| !fixFeatureValue(value))
                         {
+                            statistics.errors.insert("Ignored feature pair '" + featurePair + "' for POS tag '" + wordData[3] + "'.");
+                            if (!newPOS.empty()) tag.coumpoundTag.POS = posTags.lookup(newPOS);
                             continue;
                         }
-
+                        
                         ShortWordId fname = featureNames.lookup(name);
                         ShortWordId fvalue = featureValues.lookup(value);
                         if (fname > featureNames.size() || fvalue > featureValues.size())
                         {
-                            statistics.errors.insert("File: " + fileName + ": unknown feature pair '" + featurePair + "' for POS tag '" + wordData[3] + "'.");
+                            statistics.errors.insert("Unknown feature pair '" + name + "=" + value + +"/" + featurePair + "' for POS tag '" + wordData[3] + "'.");
                         }
                         else
                         {
@@ -330,7 +431,13 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                         }
                     }
                 }
-                if (addedFeatures > statistics.maxFeaturesNum) statistics.maxFeaturesNum = addedFeatures;
+                if (addedFeatures > statistics.maxFeaturesNum)
+                {
+                    statistics.maxFeaturesNum = addedFeatures;
+                    statistics.errors.insert("File: " + fileName + ": maximum size '" + 
+                                             std::to_string(statistics.maxFeaturesNum) +
+                                             "' found for line '" + featuresLine + "'.");
+                }
 
 
                 word.tags = tags.lookupOrInsert(tag);
@@ -344,6 +451,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                     word.depHead = 0;
                 }
 
+                // TODO: extract transitivity from deprel
                 if (wordData.size() > 7 && wordData[7] != "_")
                 {
                     std::string depRelMain, depRelMod;
@@ -356,7 +464,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                     ShortWordId depRel = depRels.lookup(depRelMain);
                     if (depRel > depRels.size())
                     {
-                        statistics.errors.insert("File: " + fileName + ": unknown dependency relation '" + depRelMain + "' for POS tag '" + wordData[3] + "'." );
+                        //statistics.errors.insert("File: " + fileName + ": unknown dependency relation '" + depRelMain + "' for POS tag '" + wordData[3] + "'." );
                     }
                     else
                     {
@@ -366,7 +474,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                     ShortWordId depRelModifier = depRelModifiers.lookup(depRelMod);
                     if (depRelModifier > depRelModifiers.size())
                     {
-                        statistics.errors.insert("File: " + fileName + ": unknown dependency relation modifier '" + depRelMain + ": " + depRelMod + "' for POS tag '" + wordData[3] + "'.");
+                        //statistics.errors.insert("File: " + fileName + ": unknown dependency relation modifier '" + depRelMain + ": " + depRelMod + "' for POS tag '" + wordData[3] + "'.");
                     }
                     else
                     {
