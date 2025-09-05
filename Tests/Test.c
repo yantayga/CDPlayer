@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "CoNLLUci.h"
+#include "../CoNLLU/CoNLLUci.h"
 
 int main(int argc, char** argv)
 {
@@ -11,14 +11,22 @@ int main(int argc, char** argv)
 
     DBHandle h = initCoNLLUDB();
 
+    printf("Loading %s ...\n", argv[1]);
     if (loadDirectory(h, argv[1]))
     {
         printStatistics(h);
 
+        printf("Saving binary ...\n");
         saveBinary(h, "./data.bin", true);
+
+        printf("Loading binary ...\n");
         loadBinary(h, "./data.bin", true);
+
         printStatistics(h);
+        printf("Saving binary again ...\n");
         saveBinary(h, "./data1.bin", true);
+
+        printf("Saving binary w/o sentences...\n");
         saveBinary(h, "./data0.bin", false);
     }
     else

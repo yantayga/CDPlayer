@@ -26,3 +26,5 @@ cabal.project.local~
 *.cddb
 report.html
 *.so
+.gdb_history
+*.profile

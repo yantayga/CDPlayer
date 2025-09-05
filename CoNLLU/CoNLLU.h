@@ -53,7 +53,11 @@ class CoNLLUDatabase
     BidirectionalMap<CompoundTag, TagId> tags;
 
     WordId serviceTag = 0;
+    
+    CoNLLUSentence unkWordOnly;
+    CoNLLUWord unknownWord;
 
+    std::vector<WordId> encodeWords(const std::vector<std::string>& words) const;
 public:
     CoNLLUDatabase();
 
@@ -66,7 +70,7 @@ public:
     bool saveBinary(const std::string& fileName, bool useSentences) const;
 
     const std::string& index2word(const WordId ix) const;
-    WordId word2index(const std::string& word);
+    WordId word2index(const std::string& word) const;
 
     void printStatistics(void);
 };

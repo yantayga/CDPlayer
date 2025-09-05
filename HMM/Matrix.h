@@ -21,6 +21,8 @@ public:
         , data(new N[numrows * numcols])
         , rowSums(new N[numrows])
     {
+        std::fill(data, data + numrows * numcols, N(0));
+        std::fill(rowSums, rowSums + numrows, N(0));
     };
 
     ~Matrix()
@@ -39,7 +41,7 @@ public:
         for (size_t i = 0; i < rows; ++i)
         {
             size_t rowStart = i * cols;
-            rowSums[i] = std::accumulate(&data[rowStart], &data[rowStart + cols], 0);
+            rowSums[i] = std::accumulate(&data[rowStart], &data[rowStart + cols], N(0));
         }
     }
 
