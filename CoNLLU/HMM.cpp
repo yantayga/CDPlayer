@@ -1,42 +1,49 @@
 #include "HMM.h"
 #include "CoNLLU.h"
-
-CoNLLUHMM::CoNLLUHMM(CoNLLUDatabase& _db)
-    : hmm(_db.tags.size(), _db.words.size())
-    , db(_db)
-{
-    CoNLLUWord serviceWord;
-    serviceWord.word = db.serviceTag;
-    serviceWord.tags = db.serviceTag;
-}
-
+#include "Serialize.h"
 
 void CoNLLUHMM::trainOnSentence(const CoNLLUSentence& sentence)
 {
-    for (size_t wix = 0; wix < sentence.words.size() + 1; ++wix)
-    {
-        // Extende sentence with start and stop states
-        const CoNLLUWord& w1 = (wix == 0)?serviceWord:sentence.words[wix-1];
-        const CoNLLUWord& w2 = (wix = sentence.words.size())?serviceWord:sentence.words[wix];
+    hmm->addHiddenState2HiddenState(serviceWord.tags, sentence.words[0].tags);
+    hmm->addHiddenState2Emission(sentence.words[0].tags, sentence.words[0].word);
 
-        hmm.addHiddenState2HiddenState(w1.tags, w2.tags);
-        hmm.addHiddenState2Emission(w2.tags, w2.word);
+    for (size_t wix = 1; wix < sentence.words.size(); ++wix)
+    {
+        hmm->addHiddenState2HiddenState(sentence.words[wix-1].tags, sentence.words[wix].tags);
+        hmm->addHiddenState2Emission(sentence.words[wix].tags, sentence.words[wix].word);
     }
+
+    hmm->addHiddenState2HiddenState(sentence.words[sentence.words.size() - 1].tags, serviceWord.tags);
+    hmm->addHiddenState2Emission(sentence.words[0].tags, serviceWord.word);
 }
 
-void CoNLLUHMM::train(double smoothingFactor)
+void CoNLLUHMM::train(CoNLLUDatabase& db, double smoothingFactor)
 {
+    serviceWord.word = db.serviceTag;
+    serviceWord.tags = db.serviceTag;
+
+    hmm = std::make_unique<HMM<double, TagId, WordId>>(db.tags.size(), db.words.size());
+
     trainOnSentence(db.unkWordOnly);
-    
+
     for (const auto& sentence: db.sentences)
     {
         trainOnSentence(sentence);
     }
 
-    hmm.train(smoothingFactor);
+    hmm->normalize(smoothingFactor);
 }
 
 std::vector<TagId> CoNLLUHMM::predict(std::vector<WordId> emissions) const
 {
-    return hmm.predict(db.serviceTag, emissions);
+    if (!hmm)
+        return std::vector<TagId>();
+
+    return hmm->predict(serviceWord.word, emissions);
+}
+
+void CoNLLUHMM::saveBinary(std::ostream& stream) const
+{
+    serialize(stream, serviceWord);
+    //hmm.saveBinary(stream);
 }

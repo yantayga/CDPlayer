@@ -11,15 +11,15 @@ class Vector
 template<typename N>
 class Matrix
 {
-    size_t rows;
-    size_t cols;
+    size_t rows = 0;
+    size_t cols = 0;
 
-    N* data;
-    N* rowSums;
-
-    Matrix();
+    N* data = NULL;
+    N* rowSums = NULL;
 
 public:
+    Matrix() {};
+
     Matrix(size_t numrows, size_t numcols)
         : rows(numrows)
         , cols(numcols)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include "CoNLLUSentence.h"
 #include "../HMM/HMM.h"
 
@@ -7,14 +8,16 @@ class CoNLLUDatabase;
 
 class CoNLLUHMM
 {
-    HMM<double, TagId, WordId> hmm;
-    CoNLLUDatabase& db;
+    std::unique_ptr<HMM<double, TagId, WordId>> hmm;
     CoNLLUWord serviceWord;
 
     void trainOnSentence(const CoNLLUSentence& sentence);
 public:
-    CoNLLUHMM(CoNLLUDatabase& _db);
-    void train(double smoothingFactor);
+    CoNLLUHMM() {};
+
+    void train(CoNLLUDatabase& db, double smoothingFactor);
 
     std::vector<TagId> predict(std::vector<WordId> emissions) const;
+
+    void saveBinary(std::ostream& stream) const;
 };

@@ -122,3 +122,26 @@ void printStatistics(DBHandle h)
         return pDB->printStatistics();
     }
 }
+
+char* tag(DBHandle h, const char* sentence)
+{
+    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
+
+    if (pDB)
+    {
+        auto res = pDB->tag(pDB->tokenize(sentence));
+
+        static char buffer[102400];
+
+        buffer[0] = '\0';
+        for (const auto& s: res)
+        {
+            strcat(buffer, s.c_str());
+            strcat(buffer, "\n");
+        }
+
+        return buffer;
+    }
+
+    return NULL;
+}

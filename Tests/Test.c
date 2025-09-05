@@ -4,9 +4,9 @@
 
 int main(int argc, char** argv)
 {
-    if (argc < 2)
+    if (argc < 3)
     {
-        printf("Usage: %s <path>\n", argv[0]);
+        printf("Usage: %s <path> <sentence>\n", argv[0]);
     }
 
     DBHandle h = initCoNLLUDB();
@@ -14,23 +14,28 @@ int main(int argc, char** argv)
     printf("Loading %s ...\n", argv[1]);
     if (loadDirectory(h, argv[1]))
     {
+        //printStatistics(h);
+
+//        printf("Saving binary ...\n");
+//        saveBinary(h, "./data.bin", true);
+
+//        printf("Loading binary ...\n");
+        loadBinary(h, "./dataT.bin", false);
+
         printStatistics(h);
+//        printf("Saving binary again ...\n");
+//        saveBinary(h, "./data1.bin", true);
 
-        printf("Saving binary ...\n");
-        saveBinary(h, "./data.bin", true);
+//        printf("Saving binary w/o sentences...\n");
+//        saveBinary(h, "./data0.bin", false);
 
-        printf("Loading binary ...\n");
-        loadBinary(h, "./data.bin", true);
-
-        printStatistics(h);
-        printf("Saving binary again ...\n");
-        saveBinary(h, "./data1.bin", true);
-
-        printf("Saving binary w/o sentences...\n");
-        saveBinary(h, "./data0.bin", false);
-        
         printf("Training...\n");
-        train(h, 1e-4);
+        train(h, 1e-9);
+
+//        saveBinary(h, "./dataT.bin", false);
+
+        printf("Tagging...\n");
+        printf(": %s\n", tag(h, argv[2]));
     }
     else
     {

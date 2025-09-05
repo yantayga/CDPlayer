@@ -10,8 +10,8 @@ class HMM
     Matrix<N> hss2hs;
     Matrix<N> hss2es;
 
-    HMM();
 public:
+    HMM() {};
     HMM(HS hiddenStates, ES emissions)
         : hss2hs(hiddenStates, hiddenStates)
         , hss2es(hiddenStates, emissions)
@@ -28,7 +28,7 @@ public:
         ++hss2es.at(srcHS, dstES);
     }
 
-    void train(double smoothingFactor)
+    void normalize(double smoothingFactor)
     {
         hss2hs.calculateRowSums();
         hss2hs.normalize(smoothingFactor);
@@ -47,6 +47,7 @@ public:
 
         const size_t hsNum = hss2es.numRows();
         const size_t seqSize = emissions.size();
+
 
         Matrix<N> prob(seqSize, hsNum);
         Matrix<N> prev(seqSize, hsNum);
@@ -75,12 +76,12 @@ public:
         }
 
         std::vector<HS> res(seqSize);
-        
+
         N pMax = 0;
         res[emissions.size() - 1] = serviceTag;
         for(size_t hsFrom = 0; hsFrom < hsNum; hsFrom++)
         {
-            N p = prob.at(emissions.size() - 1, hsFrom) * hss2hs.at(hsFrom, serviceTag);
+            N p = prob.at(emissions.size() - 1, hsFrom); //* hss2hs.at(hsFrom, serviceTag);
             if (p > pMax)
             {
                 pMax = p;

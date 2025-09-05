@@ -27,6 +27,8 @@ size_t wordsCount(DBHandle h);
 
 void train(DBHandle h, double smoothingFactor);
 
+char* tag(DBHandle h, const char* sentence);
+
 void printStatistics(DBHandle h);
 
 #ifdef __cplusplus

@@ -57,7 +57,7 @@ class CoNLLUDatabase
 
     CoNLLUSentence unkWordOnly;
     CoNLLUWord unknownWord;
-    
+
     CoNLLUHMM hmm;
 
     std::vector<WordId> encodeWords(const std::vector<std::string>& words) const;
@@ -76,6 +76,9 @@ public:
     WordId word2index(const std::string& word) const;
 
     void train(double smoothingFactor);
+
+    std::vector<std::string> tokenize(const std::string& sentence);
+    std::vector<std::string> tag(const std::vector<std::string>& sentence);
 
     void printStatistics(void);
 };

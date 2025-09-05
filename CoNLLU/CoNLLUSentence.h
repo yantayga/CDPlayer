@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include <cstring>
+#include <x86intrin.h>
 
 #include "Types.h"
 #include "CoNLLUci.h"
@@ -30,20 +31,15 @@ constexpr size_t MAX_FEATURES_PER_WORD = 16;
 struct CompoundTag
 {
     ShortWordId POS = 0;
-    union
+    struct
     {
-        struct
-        {
-            ShortWordId featureNameId;
-            ShortWordId featureValueId;
-        } features[MAX_FEATURES_PER_WORD] = {0};
-        // for hashing
-        uint64_t featuresH[sizeof(features) / (sizeof(uint64_t))];
-    };
+        ShortWordId featureNameId = 0;
+        ShortWordId featureValueId = 0;
+    } features[MAX_FEATURES_PER_WORD];
 
     bool operator==(const CompoundTag& other) const
     {
-        return POS == other.POS && std::memcmp(featuresH, other.featuresH, sizeof(featuresH)) == 0;
+        return POS == other.POS && std::memcmp(features, other.features, sizeof(features)) == 0;
     }
 };
 
@@ -53,9 +49,12 @@ struct std::hash<CompoundTag>
   std::size_t operator()(const CompoundTag& k) const
   {
     uint64_t res = (uint64_t)k.POS;
-    for (const auto fh: k.featuresH)
+    for (const auto f: k.features)
     {
-        res ^= fh;
+        res ^= uint64_t(f.featureNameId);
+        _rotl(res, 8);
+        res ^= uint64_t(f.featureValueId);
+        _rotl(res, 8);
     }
     return std::hash<uint64_t>{}(res);
   }

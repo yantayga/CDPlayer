@@ -97,7 +97,6 @@ CoNLLUDatabase::CoNLLUDatabase()
         , featureValues(FEATURE_VALUES)
         , depRels(DEP_RELS)
         , depRelModifiers(DEP_RELS_MODIFIERS)
-        , hmm(*this)
 {
     reset();
 
@@ -162,7 +161,10 @@ std::vector<std::string> split(const std::string s, char delim)
     while(std::getline(ss, item, delim))
     {
         trim(item);
-        result.push_back(item);
+        if (!item.empty())
+        {
+            result.push_back(item);
+        }
     }
 
     return result;
@@ -308,9 +310,9 @@ bool CoNLLUDatabase::load(const std::string& fileName)
             {
                 // TODO: Filter foreign words
                 // TODO: Filter URLs
-                CoNLLUWord word;
+                CoNLLUWord word = {0};
 
-                CompoundTag tag;
+                CompoundTag tag = {0};
 
                 // skip words counter wordData[0]
 
@@ -324,6 +326,9 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                 if (tag.POS > posTags.size())
                 {
                     statistics.errors.insert("Unknown POS tag: '" + wordData[3] + "'.");
+                    tag.POS = posTags.lookup("x");
+                    sentence.words.push_back(word);
+                    continue;
                 }
 
                 // optional
@@ -360,7 +365,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                     else
                     {
                         tag.features[addedFeatures].featureNameId = fname;
-                        tag.features[addedFeatures].featureNameId = fvalue;
+                        tag.features[addedFeatures].featureValueId = fvalue;
                         ++addedFeatures;
                     }
 
@@ -554,6 +559,8 @@ bool CoNLLUDatabase::saveBinary(const std::string& fileName, bool useSentences) 
 
         tags.saveBinary(stream);
 
+        hmm.saveBinary(stream);
+
         if (useSentences)
         {
             serialize(stream, sentences.size());
@@ -579,4 +586,56 @@ bool CoNLLUDatabase::saveBinary(const std::string& fileName, bool useSentences) 
 
 void CoNLLUDatabase::train(double smoothingFactor)
 {
+    hmm.train(*this, smoothingFactor);
+}
+
+std::vector<std::string> CoNLLUDatabase::tokenize(const std::string& sentence)
+{
+    std::string s(sentence);
+    toLower(s);
+    return split(s, ' ');
+}
+
+std::vector<std::string> CoNLLUDatabase::tag(const std::vector<std::string>& sentence)
+{
+    std::vector<WordId> encoded(sentence.size());
+
+    for (size_t i = 0; i < sentence.size(); ++i)
+    {
+        encoded[i] = words.lookup(sentence[i]);
+        std::cout << sentence[i] << " -> " << encoded[i] << std::endl;
+        if (encoded[i] > words.size())
+            encoded[i] = unknownWord.word;
+    }
+
+    std::vector<TagId> predicted = hmm.predict(encoded);
+
+    std::vector<std::string> res(predicted.size());
+
+    std::cout << "tags " << tags.size() << ", words " << words.size() << std::endl;
+    std::cout << "posTags " << posTags.size() << ", featureNames " << featureNames.size() << ", featureValues " << featureValues.size() << std::endl;
+    for (size_t i = 0; i < predicted.size(); ++i)
+    {
+        CompoundTag tag = tags.lookupIndex(predicted[i]);
+
+        std::cout << sentence[i] << " -> " << predicted[i] << " -> " << int(tag.POS) << std::endl;
+        for (size_t f = 0; f < MAX_FEATURES_PER_WORD; ++f)
+        {
+            std::cout << int(tag.features[f].featureNameId) << ":" << int(tag.features[f].featureValueId) << ", ";
+        }
+        std::cout  << std::endl;
+
+        std::string s = sentence[i] + ": " + posTags.lookupIndex(tag.POS) + ": ";
+        for (size_t f = 0; f < MAX_FEATURES_PER_WORD; ++f)
+        {
+            if (tag.features[f].featureNameId == 0)
+                break;
+
+            s += featureNames.lookupIndex(tag.features[f].featureNameId) + "=" + featureValues.lookupIndex(tag.features[f].featureValueId) + ", ";
+        }
+
+        res[i] = s;
+    }
+
+    return res;
 }
