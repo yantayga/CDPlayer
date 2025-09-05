@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <vector>
 #include <utility>
@@ -99,6 +101,7 @@ struct std::hash<CompoundTag>
 
 class CoNLLUDatabase
 {
+    friend class CoNLLUHMM;
     struct FileStatistics
     {
         std::string fileName;

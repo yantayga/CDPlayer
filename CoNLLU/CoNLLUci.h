@@ -1,3 +1,7 @@
+#ifdef __cplusplus
+#pragma once
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 
