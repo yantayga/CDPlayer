@@ -53,7 +53,7 @@ class CoNLLUDatabase
     BidirectionalMap<CompoundTag, TagId> tags;
 
     WordId serviceTag = 0;
-    
+
     CoNLLUSentence unkWordOnly;
     CoNLLUWord unknownWord;
 

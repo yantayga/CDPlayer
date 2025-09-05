@@ -249,11 +249,6 @@ bool fixFeatureValue(std::string& s)
         s = "intr";
         return true;
     }
-    if (s.starts_with("long"))
-    {
-        s = "full";
-        return true;
-    }
     if (s.starts_with("split") || s.starts_with("init") || s.starts_with("short"))
     {
         s = "yes";
@@ -269,7 +264,7 @@ bool fixFeatureValue(std::string& s)
         s = "vulg";
         return true;
     }
-    if (s == "no" || s == "full")
+    if (s == "no" || s == "full" || s.starts_with("long"))
     {
         return false;
     }
@@ -407,7 +402,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                     ShortWordId depRel = depRels.lookup(depRelMain);
                     if (depRel > depRels.size())
                     {
-                        //statistics.errors.insert("File: " + fileName + ": unknown dependency relation '" + depRelMain + "' for POS tag '" + wordData[3] + "'." );
+                        statistics.errors.insert("Unknown dependency relation '" + depRelMain + "' for POS tag '" + wordData[3] + "'." );
                     }
                     else
                     {
@@ -417,7 +412,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                     ShortWordId depRelModifier = depRelModifiers.lookup(depRelMod);
                     if (depRelModifier > depRelModifiers.size())
                     {
-                        //statistics.errors.insert("File: " + fileName + ": unknown dependency relation modifier '" + depRelMain + ": " + depRelMod + "' for POS tag '" + wordData[3] + "'.");
+                        statistics.errors.insert("Unknown dependency relation modifier '" + depRelMain + ": " + depRelMod + "' for POS tag '" + wordData[3] + "'.");
                     }
                     else
                     {

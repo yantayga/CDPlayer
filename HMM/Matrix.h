@@ -4,6 +4,11 @@
 #include <numeric>
 
 template<typename N>
+class Vector
+{
+};
+
+template<typename N>
 class Matrix
 {
     size_t rows;
@@ -36,11 +41,26 @@ public:
         return data[row * cols + col];
     };
 
+    const N& at(size_t row, size_t col) const
+    {
+        return data[row * cols + col];
+    };
+
+    size_t numRows() const
+    {
+        return rows;
+    }
+
+    size_t numCols() const
+    {
+        return cols;
+    }
+
     void calculateRowSums()
     {
         for (size_t i = 0; i < rows; ++i)
         {
-            size_t rowStart = i * cols;
+            const size_t rowStart = i * cols;
             rowSums[i] = std::accumulate(&data[rowStart], &data[rowStart + cols], N(0));
         }
     }
@@ -49,7 +69,7 @@ public:
     {
         for (size_t i = 0; i < rows; ++i)
         {
-            size_t rowStart = i * cols;
+            const size_t rowStart = i * cols;
             std::for_each(&data[rowStart], &data[rowStart + cols], [&](N &n) { n /= rowSums[i]; });
         }
     }
@@ -58,12 +78,21 @@ public:
     {
         for (size_t i = 0; i < rows; ++i)
         {
-            size_t rowStart = i * cols;
+            const size_t rowStart = i * cols;
             std::for_each(&data[rowStart], &data[rowStart + cols], [&](N &n) { n *= rowSums[i]; });
         }
     }
 
-    std::vector<N> getColumn(size_t col)
+    std::vector<N> getRow(size_t row) const
     {
+        const size_t rowStart = row * cols;
+        return std::vector(&data[rowStart], &data[rowStart + cols]);
+    }
+
+    // elementwise multiplication
+    void multiplyByColumn(std::vector<N>& v, size_t col) const
+    {
+        size_t row = 0;
+        std::for_each(v.begin(), v.end(), [&](N &n) { n *= at(row++, col); });
     }
 };
