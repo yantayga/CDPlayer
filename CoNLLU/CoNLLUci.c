@@ -103,6 +103,16 @@ size_t wordsCount(DBHandle h)
     return -1;
 }
 
+void train(DBHandle h, double smoothingFactor)
+{
+    CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
+
+    if (pDB)
+    {
+        return pDB->train(smoothingFactor);
+    }
+}
+
 void printStatistics(DBHandle h)
 {
     CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;

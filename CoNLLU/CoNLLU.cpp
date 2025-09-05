@@ -97,6 +97,7 @@ CoNLLUDatabase::CoNLLUDatabase()
         , featureValues(FEATURE_VALUES)
         , depRels(DEP_RELS)
         , depRelModifiers(DEP_RELS_MODIFIERS)
+        , hmm(*this)
 {
     reset();
 
@@ -576,3 +577,6 @@ bool CoNLLUDatabase::saveBinary(const std::string& fileName, bool useSentences) 
     return false;
 }
 
+void CoNLLUDatabase::train(double smoothingFactor)
+{
+}

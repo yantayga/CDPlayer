@@ -25,6 +25,8 @@ WordId word2index(DBHandle h, const char* word);
 
 size_t wordsCount(DBHandle h);
 
+void train(DBHandle h, double smoothingFactor);
+
 void printStatistics(DBHandle h);
 
 #ifdef __cplusplus

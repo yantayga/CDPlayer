@@ -1,5 +1,9 @@
-#include "CoNLLU.h"
+#pragma once
+
+#include "CoNLLUSentence.h"
 #include "../HMM/HMM.h"
+
+class CoNLLUDatabase;
 
 class CoNLLUHMM
 {
@@ -9,16 +13,8 @@ class CoNLLUHMM
 
     void trainOnSentence(const CoNLLUSentence& sentence);
 public:
-    CoNLLUHMM(CoNLLUDatabase& _db)
-        : hmm(_db.tags.size(), _db.words.size())
-        , db(_db)
-    {
-        CoNLLUWord serviceWord;
-        serviceWord.word = db.serviceTag;
-        serviceWord.tags = db.serviceTag;
-    }
-
-    void train();
+    CoNLLUHMM(CoNLLUDatabase& _db);
+    void train(double smoothingFactor);
 
     std::vector<TagId> predict(std::vector<WordId> emissions) const;
 };

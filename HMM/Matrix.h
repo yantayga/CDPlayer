@@ -65,21 +65,21 @@ public:
         }
     }
 
-    void normalize()
+    void normalize(N smoothingFactor)
     {
         for (size_t i = 0; i < rows; ++i)
         {
             const size_t rowStart = i * cols;
-            std::for_each(&data[rowStart], &data[rowStart + cols], [&](N &n) { n /= rowSums[i]; });
+            std::for_each(&data[rowStart], &data[rowStart + cols], [&](N &n) { n += smoothingFactor; n /= (rowSums[i] + smoothingFactor); });
         }
     }
 
-    void denormalize()
+    void denormalize(N smoothingFactor)
     {
         for (size_t i = 0; i < rows; ++i)
         {
             const size_t rowStart = i * cols;
-            std::for_each(&data[rowStart], &data[rowStart + cols], [&](N &n) { n *= rowSums[i]; });
+            std::for_each(&data[rowStart], &data[rowStart + cols], [&](N &n) { n *= (rowSums[i] - smoothingFactor); n-= smoothingFactor; });
         }
     }
 
@@ -87,12 +87,5 @@ public:
     {
         const size_t rowStart = row * cols;
         return std::vector(&data[rowStart], &data[rowStart + cols]);
-    }
-
-    // elementwise multiplication
-    void multiplyByColumn(std::vector<N>& v, size_t col) const
-    {
-        size_t row = 0;
-        std::for_each(v.begin(), v.end(), [&](N &n) { n *= at(row++, col); });
     }
 };

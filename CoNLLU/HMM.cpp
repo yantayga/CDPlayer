@@ -1,4 +1,15 @@
 #include "HMM.h"
+#include "CoNLLU.h"
+
+CoNLLUHMM::CoNLLUHMM(CoNLLUDatabase& _db)
+    : hmm(_db.tags.size(), _db.words.size())
+    , db(_db)
+{
+    CoNLLUWord serviceWord;
+    serviceWord.word = db.serviceTag;
+    serviceWord.tags = db.serviceTag;
+}
+
 
 void CoNLLUHMM::trainOnSentence(const CoNLLUSentence& sentence)
 {
@@ -13,7 +24,7 @@ void CoNLLUHMM::trainOnSentence(const CoNLLUSentence& sentence)
     }
 }
 
-void CoNLLUHMM::train()
+void CoNLLUHMM::train(double smoothingFactor)
 {
     trainOnSentence(db.unkWordOnly);
     
@@ -22,7 +33,7 @@ void CoNLLUHMM::train()
         trainOnSentence(sentence);
     }
 
-    hmm.train();
+    hmm.train(smoothingFactor);
 }
 
 std::vector<TagId> CoNLLUHMM::predict(std::vector<WordId> emissions) const

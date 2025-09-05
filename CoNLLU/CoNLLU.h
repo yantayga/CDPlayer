@@ -11,6 +11,7 @@
 #include "Types.h"
 #include "Statistics.h"
 #include "CoNLLUSentence.h"
+#include "HMM.h"
 
 template <class Item, class Index>
 class BidirectionalMap
@@ -56,6 +57,8 @@ class CoNLLUDatabase
 
     CoNLLUSentence unkWordOnly;
     CoNLLUWord unknownWord;
+    
+    CoNLLUHMM hmm;
 
     std::vector<WordId> encodeWords(const std::vector<std::string>& words) const;
 public:
@@ -71,6 +74,8 @@ public:
 
     const std::string& index2word(const WordId ix) const;
     WordId word2index(const std::string& word) const;
+
+    void train(double smoothingFactor);
 
     void printStatistics(void);
 };

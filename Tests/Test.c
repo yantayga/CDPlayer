@@ -28,6 +28,9 @@ int main(int argc, char** argv)
 
         printf("Saving binary w/o sentences...\n");
         saveBinary(h, "./data0.bin", false);
+        
+        printf("Training...\n");
+        train(h, 1e-4);
     }
     else
     {

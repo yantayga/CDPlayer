@@ -28,13 +28,13 @@ public:
         ++hss2es.at(srcHS, dstES);
     }
 
-    void train()
+    void train(double smoothingFactor)
     {
         hss2hs.calculateRowSums();
-        hss2hs.normalize();
+        hss2hs.normalize(smoothingFactor);
 
         hss2es.calculateRowSums();
-        hss2es.normalize();
+        hss2es.normalize(smoothingFactor);
     }
 
     // Maybe Viterbi algorithm
@@ -45,53 +45,54 @@ public:
             return std::vector<HS>();
         }
 
-        const size_t hsNum = hss2hs.numRows();
+        const size_t hsNum = hss2es.numRows();
+        const size_t seqSize = emissions.size();
 
-        // step 0: fill with <start> -> first word probs
-        std::vector<N> hsPrev(hss2hs.getRow(serviceTag));
+        Matrix<N> prob(seqSize, hsNum);
+        Matrix<N> prev(seqSize, hsNum);
 
-        // for calculating the resulting path back; first column always leeds to <start>
-        // by column
-        std::vector<std::vector<HS>> backPaths(emissions.size(), std::vector<HS>(hsNum, serviceTag));
+        // From start to first word
+        const std::vector<N> inits(hss2hs.getRow(serviceTag));
 
-        for (size_t i = 1; i < emissions.size(); ++i)
+        // From first word to second
+        for(size_t hsTo = 0; hsTo < hsNum; hsTo++)
+            prob.at(0, hsTo) = inits[hsTo] * hss2es.at(hsTo, emissions[0]);
+
+        for (size_t i = 1; i < seqSize; ++i)
         {
-            std::vector<N> hsCurrent(hsNum);
-
-            for (HS hsTo = 0; hsTo < hsNum; ++hsTo)
+            for(size_t hsTo = 0; hsTo < hsNum; hsTo++)
             {
-                std::vector<N> hsTmp(hsPrev);
-                hss2hs.multiplyByColumn(hsTmp, hsTo);
-
-                HS idx = maxIndex(hsCurrent);
-
-                backPaths[i][hsTo] = idx;
-                hsCurrent[hsTo] = hsTmp[idx];
+                for(size_t hsFrom = 0; hsFrom < hsNum; hsFrom++)
+                {
+                    N p = prob.at(i - 1, hsFrom) * hss2hs.at(hsFrom, hsTo) * hss2es.at(hsTo, emissions[i]);
+                    if (p > prob.at(i, hsFrom))
+                    {
+                        prob.at(i, hsTo) = p;
+                        prev.at(i, hsTo) = hsFrom;
+                    }
+                }
             }
-
-            // multiply elementwise to hs2emissions probs
-            hss2es.multiplyByColumn(hsCurrent, i);
-            std::swap(hsPrev, hsCurrent);
         }
 
-        // step last: calculating transitions form prevstates to <end>
-        // given hsPrev
-        hss2hs.multiplyByColumn(hsPrev, serviceTag);
-
-        std::vector<HS> res(emissions.size(), serviceTag);
-        //trace back the most probable path
-        HS prevState = maxIndex(hsPrev);
-        for (size_t i = emissions.size(); i != 0; --i)
+        std::vector<HS> res(seqSize);
+        
+        N pMax = 0;
+        res[emissions.size() - 1] = serviceTag;
+        for(size_t hsFrom = 0; hsFrom < hsNum; hsFrom++)
         {
-            prevState = backPaths[prevState][i - 1];
-            res[i - 1] = prevState;
+            N p = prob.at(emissions.size() - 1, hsFrom) * hss2hs.at(hsFrom, serviceTag);
+            if (p > pMax)
+            {
+                pMax = p;
+                res[emissions.size() - 1] = hsFrom;
+            }
+        }
+
+        for (size_t i = emissions.size() - 1; i != 0; --i)
+        {
+            res[i - 1] = prev.at(i, res[i]);
         }
 
         return res;
     };
-
-    HS maxIndex(const std::vector<N>& v) const
-    {
-        return *std::max_element(v.begin(), v.end());
-    }
 };
