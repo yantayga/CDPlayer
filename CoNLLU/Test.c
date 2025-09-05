@@ -15,10 +15,11 @@ int main(int argc, char** argv)
     {
         printStatistics(h);
 
-        saveBinary(h, "./data.bin");
-        loadBinary(h, "./data.bin");
+        saveBinary(h, "./data.bin", true);
+        loadBinary(h, "./data.bin", true);
         printStatistics(h);
-        saveBinary(h, "./data1.bin");
+        saveBinary(h, "./data1.bin", true);
+        saveBinary(h, "./data0.bin", false);
     }
     else
     {

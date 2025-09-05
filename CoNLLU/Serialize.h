@@ -10,8 +10,7 @@ void write(std::ostream& stream, const T& t)
 }
 
 template<typename T>
-bool read(std::istream& stream, T& t)
+void read(std::istream& stream, T& t)
 {
     stream.read(reinterpret_cast<char*>(&t), sizeof(t));
-    return true;
 }

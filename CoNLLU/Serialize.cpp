@@ -23,11 +23,10 @@ void write<std::string>(std::ostream& stream, const std::string& t)
 }
 
 template<>
-bool read<std::string>(std::istream& stream, std::string& t)
+void read<std::string>(std::istream& stream, std::string& t)
 {
     size_t l = 0;
     read(stream, l);
     t.resize(l);
     stream.read(t.data(), l);
-    return true;
 }

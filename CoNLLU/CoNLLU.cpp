@@ -16,52 +16,6 @@
 
 #include "CoNLLUStd.h"
 
-void CoNLLUWord::saveBinary(std::ostream& stream) const
-{
-    write(stream, word);
-    write(stream, initialWord);
-    write(stream, tags);
-    write(stream, depHead);
-    write(stream, depRel);
-    write(stream, depRelModifier);
-}
-
-bool CoNLLUWord::loadBinary(std::istream& stream)
-{
-    read(stream, word);
-    read(stream, initialWord);
-    read(stream, tags);
-    read(stream, depHead);
-    read(stream, depRel);
-    read(stream, depRelModifier);
-
-    return true;
-}
-
-void CoNLLUSentence::saveBinary(std::ostream& stream) const
-{
-    write(stream, words.size());
-    for (size_t i = 0; i < words.size(); ++i)
-    {
-        words[i].saveBinary(stream);
-    }
-}
-
-bool CoNLLUSentence::loadBinary(std::istream& stream)
-{
-    size_t size = 0;
-    read(stream, size);
-
-    words.resize(size);
-
-    for (size_t i = 0; i < size; ++i)
-    {
-        words[i].loadBinary(stream);
-    }
-
-    return true;
-}
-
 template <class Item, class Index>
 BidirectionalMap<Item, Index>::BidirectionalMap(const std::vector<Item> items)
 {
@@ -117,7 +71,7 @@ void BidirectionalMap<Item, Index>::saveBinary(std::ostream& stream) const
 }
 
 template <class Item, class Index>
-bool BidirectionalMap<Item, Index>::loadBinary(std::istream& stream)
+void BidirectionalMap<Item, Index>::loadBinary(std::istream& stream)
 {
     size_t size = 0;
     read(stream, size);
@@ -127,18 +81,12 @@ bool BidirectionalMap<Item, Index>::loadBinary(std::istream& stream)
     for (size_t i = 0; i < size; ++i)
     {
         Item item;
-        if (read(stream, item))
-        {
-            const auto res = item2index.try_emplace(item, i);
-            index2item[i] = &res.first->first;
-        }
-        else
-        {
-            return false;
-        }
-    }
 
-    return true;
+        read(stream, item);
+
+        const auto res = item2index.try_emplace(item, i);
+        index2item[i] = &res.first->first;
+    }
 }
 
 CoNLLUDatabase::CoNLLUDatabase()
@@ -161,9 +109,7 @@ void CoNLLUDatabase::reset(void)
     statistics.errors.clear();
     statistics.maxFeaturesNum = 0;
 
-    beginTag = words.lookupOrInsert(defStartTag);
-    endTag = words.lookupOrInsert(defEndTag);
-    unkTag = words.lookupOrInsert(defUnkTag);
+    serviceTag = words.lookupOrInsert(defServiceTag);
 }
 
 inline void ltrim(std::string &s)
@@ -247,11 +193,6 @@ bool fixFeatureName(std::string& s, std::string& pos)
     if (s.starts_with("form"))
     {
         s = "numform";
-        return true;
-    }
-    if (s.starts_with("anom"))
-    {
-        s = "typo";
         return true;
     }
     if (s.starts_with("tran"))
@@ -367,16 +308,16 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                 CoNLLUWord word;
 
                 CompoundTag tag;
-                tag.tag128 = 0;
 
                 // skip words counter wordData[0]
 
                 filterNumbers(wordData[1]);
                 word.word = words.lookupOrInsert(wordData[1]);
+
                 filterNumbers(wordData[2]);
-                word.initialWord = words.lookupOrInsert(wordData[2]);
-                tag.coumpoundTag.POS = posTags.lookup(fixTag(wordData[3]));
-                if (tag.coumpoundTag.POS > posTags.size())
+                tag.initialWord = words.lookupOrInsert(wordData[2]);
+                tag.POS = posTags.lookup(fixTag(wordData[3]));
+                if (tag.POS > posTags.size())
                 {
                     statistics.errors.insert("Unknown POS tag: '" + wordData[3] + "'.");
                 }
@@ -392,29 +333,37 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                 for (auto featurePair: features)
                 {
                     std::string name, value;
-                    if (parsePair(featurePair, "=", name, value))
+                    if (!parsePair(featurePair, "=", name, value))
                     {
-                        std::string newPOS;
-                        if (name.empty() || value.empty() || !fixFeatureName(name, newPOS)|| !fixFeatureValue(value))
-                        {
-                            statistics.errors.insert("Ignored feature pair '" + featurePair + "' for POS tag '" + wordData[3] + "'.");
-                            if (!newPOS.empty()) tag.coumpoundTag.POS = posTags.lookup(newPOS);
-                            continue;
-                        }
+                        statistics.errors.insert("Wrong feature pair '" + featurePair + "' for POS tag '" + wordData[3] + "'.");
+                        continue;
+                    }
 
-                        ShortWordId fname = featureNames.lookup(name);
-                        ShortWordId fvalue = featureValues.lookup(value);
-                        if (fname > featureNames.size() || fvalue > featureValues.size())
-                        {
-                            statistics.errors.insert("Unknown feature pair '" + name + "=" + value + +"/" + featurePair + "' for POS tag '" + wordData[3] + "'.");
-                        }
-                        else
-                        {
-                            ++addedFeatures;
-                            tag.coumpoundTag.features =
-                                tag.coumpoundTag.features << (featureNames.bits() + featureValues.bits()) |
-                                fname << featureNames.bits() | fvalue;
-                        }
+                    std::string newPOS;
+                    if (name.empty() || value.empty() || !fixFeatureName(name, newPOS)|| !fixFeatureValue(value))
+                    {
+                        statistics.errors.insert("Ignored feature pair '" + featurePair + "' for POS tag '" + wordData[3] + "'.");
+                        if (!newPOS.empty()) tag.POS = posTags.lookup(newPOS);
+                        continue;
+                    }
+
+                    ShortWordId fname = featureNames.lookup(name);
+                    ShortWordId fvalue = featureValues.lookup(value);
+                    if (fname > featureNames.size() || fvalue > featureValues.size())
+                    {
+                        statistics.errors.insert("Unknown feature pair '" + name + "=" + value + +"/" + featurePair + "' for POS tag '" + wordData[3] + "'.");
+                    }
+                    else
+                    {
+                        tag.features[addedFeatures].featureNameId = fname;
+                        tag.features[addedFeatures].featureNameId = fvalue;
+                        ++addedFeatures;
+                    }
+
+                    if (addedFeatures >= sizeof(tag.features))
+                    {
+                        statistics.errors.insert("Maximum features number reached for POS tag '" + wordData[3] + "'.");
+                        break;
                     }
                 }
                 if (addedFeatures > statistics.maxFeaturesNum)
@@ -516,42 +465,22 @@ void CoNLLUDatabase::printStatistics(void)
     std::cout << "Database statistics:" << std::endl;
 
     std::cout << "Bits for POS tag: " << posTags.bits() << std::endl;
-    posTags.printIndex();
-    std::cout << std::endl << "Bits for feature name: " << featureNames.bits() << std::endl;
-    featureNames.printIndex();
-    std::cout << std::endl << "Bits for feature value: " << featureValues.bits() << std::endl;
-    featureValues.printIndex();
-    std::cout << std::endl << "Bits for dependency relation: " << depRels.bits() << std::endl;
-    depRels.printIndex();
-    std::cout << std::endl << "Bits for dependency relation modifiers: " << depRelModifiers.bits() << std::endl;
-    depRelModifiers.printIndex();
-    std::cout << std::endl;
+    std::cout << "Bits for feature name: " << featureNames.bits() << std::endl;
+    std::cout << "Bits for feature value: " << featureValues.bits() << std::endl;
+    std::cout << "Bits for dependency relation: " << depRels.bits() << std::endl;
+    std::cout << "Bits for dependency relation modifiers: " << depRelModifiers.bits() << std::endl;
 
-    std::cout << "Max features num = " << statistics.maxFeaturesNum
-              << ", bits per features = " << statistics.maxFeaturesNum * (featureNames.bits() + featureValues.bits())
-              << ", overall bits per word tags = " << posTags.bits() + statistics.maxFeaturesNum * (featureNames.bits() + featureValues.bits()) << std::endl;
+    std::cout << "Sentences: " << sentences.size() << "." << std::endl;
+    std::cout << "Words: " << words.size() << "." << std::endl;
+    std::cout << "Tags: " << tags.size() << "." << std::endl;
 
-    std::cout << "Overall sentences: " << sentences.size() << "." << std::endl;
-    std::cout << "Overall words: " << words.size() << "." << std::endl;
-    std::cout << "Overall tags: " << tags.size() << "." << std::endl;
-
-    std::cout << "Files loaded:" << std::endl;
-    for (auto& file: statistics.files)
-    {
-        std::cout << "File: " << file.fileName << ": " << file.sentencesNum << " sentences, " << file.wordsNum << " words." << std::endl;
-    }
-
-    std::cout << "Errors:" << std::endl;
-    for (auto& error: statistics.errors)
-    {
-        std::cout << error << std::endl;
-    }
+    statistics.print();
 }
 
-bool CoNLLUDatabase::loadBinary(const std::string& fileName)
+bool CoNLLUDatabase::loadBinary(const std::string& fileName, bool useSentences)
 {
     igzstream stream;
-    
+
     stream.open(fileName.c_str());
 
     if (stream.good())
@@ -564,26 +493,21 @@ bool CoNLLUDatabase::loadBinary(const std::string& fileName)
             return false;
         }
 
-        if (!words.loadBinary(stream))
-        {
-            std::cout << "Cannot read words: " << fileName << std::endl;
-            return false;
-        }
+        words.loadBinary(stream);
 
-        if (!tags.loadBinary(stream))
-        {
-            std::cout << "Cannot read words: " << fileName << std::endl;
-            return false;
-        }
+        tags.loadBinary(stream);
 
         size_t size = 0;
         read(stream, size);
 
-        sentences.resize(size);
-
-        for (size_t i = 0; i < size; ++i)
+        if (useSentences)
         {
-            sentences[i].loadBinary(stream);
+            sentences.resize(size);
+
+            for (size_t i = 0; i < size; ++i)
+            {
+                sentences[i].loadBinary(stream);
+            }
         }
 
         return true;
@@ -593,12 +517,12 @@ bool CoNLLUDatabase::loadBinary(const std::string& fileName)
     return false;
 }
 
-bool CoNLLUDatabase::saveBinary(const std::string& fileName) const
+bool CoNLLUDatabase::saveBinary(const std::string& fileName, bool useSentences) const
 {
     ogzstream stream;
-    
+
     stream.open(fileName.c_str());
-    
+
     if (stream.good())
     {
         writeMagic(stream);
@@ -606,11 +530,18 @@ bool CoNLLUDatabase::saveBinary(const std::string& fileName) const
         words.saveBinary(stream);
         tags.saveBinary(stream);
 
-        write(stream, sentences.size());
-
-        for (const auto& sentence: sentences)
+        if (useSentences)
         {
-            sentence.saveBinary(stream);
+            write(stream, sentences.size());
+
+            for (const auto& sentence: sentences)
+            {
+                sentence.saveBinary(stream);
+            }
+        }
+        else
+        {
+            write(stream, size_t(0));
         }
 
         return true;

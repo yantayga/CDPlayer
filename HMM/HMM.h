@@ -7,14 +7,15 @@ class HMM
 {
     Matrix<N> hss2hs;
     Matrix<N> hss2es;
-    
+
+    HMM();
 public:
     HMM(HS hiddenStates, ES emissions)
         : hss2hs(hiddenStates, hiddenStates)
         , hss2es(hiddenStates, emissions)
     {
     };
-    
+
     void addHiddenState2HiddenState(HS srcHS, HS dstHS)
     {
         ++hss2hs.at(srcHS, dstHS);
@@ -24,17 +25,17 @@ public:
     {
         ++hss2hs.at(srcHS, dstES);
     }
-    
+
     void train()
     {
         hss2hs.calculateRowSums();
         hss2hs.normalize();
-        
+
         hss2es.calculateRowSums();
         hss2es.normalize();
     }
-    
-    std::vector<HS> predict(HS startTag, const std::vector<ES>& emissions, HS endTag)
+
+    std::vector<HS> predict(HS serviceTag, const std::vector<ES>& emissions) const
     {
         //std::vector<N>(hss2hs.getRow(startTag));
     };

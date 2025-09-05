@@ -42,25 +42,25 @@ bool loadDirectory(DBHandle h, const char* path)
     return false;
 }
 
-bool loadBinary(DBHandle h, const char* path)
+bool loadBinary(DBHandle h, const char* path, bool useSentences)
 {
     CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
 
     if (pDB)
     {
-        return pDB->loadBinary(path);
+        return pDB->loadBinary(path, useSentences);
     }
 
     return false;
 }
 
-bool saveBinary(DBHandle h, const char* path)
+bool saveBinary(DBHandle h, const char* path, bool useSentences)
 {
     CoNLLUDatabase* pDB = (CoNLLUDatabase*)h;
 
     if (pDB)
     {
-        return pDB->saveBinary(path);
+        return pDB->saveBinary(path, useSentences);
     }
 
     return false;

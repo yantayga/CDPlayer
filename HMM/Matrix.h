@@ -12,6 +12,8 @@ class Matrix
     N* data;
     N* rowSums;
 
+    Matrix();
+
 public:
     Matrix(size_t numrows, size_t numcols)
         : rows(numrows)
@@ -58,7 +60,7 @@ public:
             std::for_each(&data[rowStart], &data[rowStart + cols], [&](N &n) { n *= rowSums[i]; });
         }
     }
-    
+
     std::vector<N> getColumn(size_t col)
     {
     }

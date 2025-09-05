@@ -1,11 +1,10 @@
+#include <string>
 
-const char defStartTag[] = "<strat>";
-const char defEndTag[] = "<end>";
-const char defUnkTag[] = "<unk>";
+const char defServiceTag[] = "<>";
 
 const std::vector<std::string> POS_TAGS = {
     // Service
-    defStartTag, defEndTag,
+    defServiceTag,
     // https://universaldependencies.org/u/pos/all.html
     "x",      // other/url/foreign/unknown
     "adj",    // adjective
