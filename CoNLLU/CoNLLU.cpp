@@ -100,6 +100,10 @@ CoNLLUDatabase::CoNLLUDatabase()
 {
     reset();
 
+    CompoundTag t;
+    t.POS = posTags.lookup("x");
+    unknownWord.tags = tags.lookupOrInsert(t);
+
     unknownWord.word = words.lookupOrInsert("");
     unkWordOnly.words.push_back(unknownWord);
 }
@@ -114,7 +118,10 @@ void CoNLLUDatabase::reset(void)
     statistics.errors.clear();
     statistics.maxFeaturesNum = 0;
 
+    
     serviceTag = words.lookupOrInsert(defServiceTag);
+    CompoundTag t;
+    tags.lookupOrInsert(t);
 }
 
 inline void ltrim(std::string &s)
@@ -304,6 +311,8 @@ bool CoNLLUDatabase::load(const std::string& fileName)
             }
 
             toLower(line);
+            
+            //std::cout << line << std::endl;
 
             std::vector<std::string> wordData = split(line, '\t');
             if (wordData.size() > 3)
@@ -428,6 +437,14 @@ bool CoNLLUDatabase::load(const std::string& fileName)
 
                 sentence.words.push_back(word);
             }
+        }
+
+        if (!sentence.words.empty())
+        {
+            ++st.sentencesNum;
+            st.wordsNum += sentence.words.size();
+            sentences.push_back(sentence);
+            sentence.words.clear();
         }
 
         statistics.files.push_back(st);
@@ -586,6 +603,7 @@ bool CoNLLUDatabase::saveBinary(const std::string& fileName, bool useSentences) 
 
 void CoNLLUDatabase::train(double smoothingFactor)
 {
+    //std::cout << "SENTENCES " << " = " << sentences.size() << std::endl;
     hmm.train(*this, smoothingFactor);
 }
 
@@ -598,6 +616,17 @@ std::vector<std::string> CoNLLUDatabase::tokenize(const std::string& sentence)
 
 std::vector<std::string> CoNLLUDatabase::tag(const std::vector<std::string>& sentence)
 {
+    /*
+    for (size_t i = 0; i < words.size(); ++i)
+    {
+        std::cout << "word " << i << " = " << words.lookupIndex(i) << std::endl;
+    }
+    
+    for (size_t i = 0; i < tags.size(); ++i)
+    {
+        std::cout << "tag " << i << " = " << tags.lookupIndex(i).POS << " " << posTags.lookupIndex(tags.lookupIndex(i).POS) << std::endl;
+    }
+    */
     std::vector<WordId> encoded(sentence.size());
 
     for (size_t i = 0; i < sentence.size(); ++i)

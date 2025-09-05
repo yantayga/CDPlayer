@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <iostream>
 
 template<typename N>
 class Vector
@@ -87,5 +88,15 @@ public:
     {
         const size_t rowStart = row * cols;
         return std::vector(&data[rowStart], &data[rowStart + cols]);
+    }
+    
+    void print(void)
+    {
+        for (size_t i = 0; i < rows; ++i)
+        {
+            const size_t rowStart = i * cols;
+            std::for_each(&data[rowStart], &data[rowStart + cols], [&](N &n) { std::cout << n << ", "; });
+            std::cout << " -> " << rowSums[i] << std::endl;
+        }
     }
 };

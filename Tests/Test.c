@@ -7,6 +7,7 @@ int main(int argc, char** argv)
     if (argc < 3)
     {
         printf("Usage: %s <path> <sentence>\n", argv[0]);
+        return -1;
     }
 
     DBHandle h = initCoNLLUDB();
@@ -20,7 +21,7 @@ int main(int argc, char** argv)
 //        saveBinary(h, "./data.bin", true);
 
 //        printf("Loading binary ...\n");
-        loadBinary(h, "./dataT.bin", false);
+        //loadBinary(h, "./dataT.bin", false);
 
         printStatistics(h);
 //        printf("Saving binary again ...\n");
@@ -30,7 +31,7 @@ int main(int argc, char** argv)
 //        saveBinary(h, "./data0.bin", false);
 
         printf("Training...\n");
-        train(h, 1e-9);
+        train(h, 0);
 
 //        saveBinary(h, "./dataT.bin", false);
 
