@@ -22,6 +22,17 @@ BidirectionalMap<Item, Index>::BidirectionalMap(const std::vector<Item> items)
     std::for_each(items.begin(), items.end(), [this](auto item) { lookupOrInsert(item); });
 }
 
+template<class Item, class Index>
+template<typename Initializer>
+BidirectionalMap<Item, Index>::BidirectionalMap(const std::vector<Initializer> initializers)
+{
+    for (const auto& item: initializers)
+    {
+        const auto res = item2index.try_emplace(item.name, TagFeatures(index2item.size(), item.items));
+        index2item.push_back(&res.first->first);
+    }
+}
+
 template <class Item, class Index>
 void BidirectionalMap<Item, Index>::clear(void)
 {
@@ -48,7 +59,7 @@ const Index BidirectionalMap<Item, Index>::lookup(const Item& item) const
     auto res = item2index.find(item);
     if (res == item2index.end())
     {
-        return -1;
+        return Index(-1);
     }
 
     return res->second;
@@ -58,6 +69,12 @@ template <class Item, class Index>
 const Item& BidirectionalMap<Item, Index>::lookupIndex(const Index index) const
 {
     return *index2item[index];
+}
+
+template <class Item, class Index>
+bool BidirectionalMap<Item, Index>::isValidIndex(const Index index) const
+{
+    return index != Index(-1);
 }
 
 template <class Item, class Index>
@@ -92,8 +109,7 @@ void BidirectionalMap<Item, Index>::loadBinary(std::istream& stream)
 }
 
 CoNLLUDatabase::CoNLLUDatabase()
-        : posTags(POS_TAGS)
-        , featureNames(FEATURE_NAMES)
+        : posTags(TAG_DESCRIPTIONS)
         , featureValues(FEATURE_VALUES)
         , depRels(DEP_RELS)
         , depRelModifiers(DEP_RELS_MODIFIERS)
@@ -101,7 +117,7 @@ CoNLLUDatabase::CoNLLUDatabase()
     reset();
 
     CompoundTag t;
-    t.POS = posTags.lookup("x");
+    t.POS = posTags.lookup("x").index;
     unknownWord.tags = tags.lookupOrInsert(t);
 
     unknownWord.word = words.lookupOrInsert("");
@@ -114,10 +130,7 @@ void CoNLLUDatabase::reset(void)
     words.clear();
     tags.clear();
 
-    statistics.files.clear();
-    statistics.errors.clear();
-    statistics.maxFeaturesNum = 0;
-
+    statistics.clear();
 
     serviceTag = words.lookupOrInsert(defServiceTag);
     CompoundTag t;
@@ -159,13 +172,14 @@ bool parsePair(const std::string s, const std::string& delim, std::string& name,
     return true;
 }
 
-std::vector<std::string> split(const std::string s, char delim)
+std::vector<std::string> split(std::string s, std::string delims)
 {
-    std::vector<std::string> result;
+    std::for_each(delims.begin(), delims.end(), [&](char &c) { std::replace(s.begin(), s.end(), c, '\n'); });
+    
     std::stringstream ss(s);
     std::string item;
-
-    while(std::getline(ss, item, delim))
+    std::vector<std::string> result;
+    while(std::getline(ss, item))
     {
         trim(item);
         if (!item.empty())
@@ -203,7 +217,7 @@ std::string fixTag(const std::string& s)
     else return s;
 }
 
-bool fixFeatureName(std::string& s, std::string& pos)
+bool fixFeatureName(std::string& s, const std::string& oldpos, std::string& pos)
 {
     if (s.starts_with("form"))
     {
@@ -220,19 +234,15 @@ bool fixFeatureName(std::string& s, std::string& pos)
         s = "animacy";
         return true;
     }
-    if (s.starts_with("predic") || s.starts_with("decl"))
+    if ((oldpos == "adj" || oldpos == "noun") && (s == "aspect" || s == "verbform" || s == "subcat" || s == "voice"))
     {
+        pos = "verb";
         return false;
     }
-    if (s.starts_with("nametype"))
+    if (s.starts_with("predic"))
     {
-        pos = "propn";
-        return true;
-    }
-    if (s.starts_with("variant"))
-    {
-        s = "short";
-        return true;
+        // skip
+        return false;
     }
     return true;
 }
@@ -259,7 +269,7 @@ bool fixFeatureValue(std::string& s)
         s = "intr";
         return true;
     }
-    if (s.starts_with("split") || s.starts_with("init") || s.starts_with("short"))
+    if (s.starts_with("split") || s.starts_with("init"))
     {
         s = "yes";
         return true;
@@ -274,7 +284,7 @@ bool fixFeatureValue(std::string& s)
         s = "vulg";
         return true;
     }
-    if (s == "no" || s == "full" || s.starts_with("long"))
+    if (s == "no" || s == "full" || s == "long")
     {
         return false;
     }
@@ -287,11 +297,8 @@ bool CoNLLUDatabase::load(const std::string& fileName)
 
     if (stream.is_open())
     {
-        FileStatistics st;
-
-        st.fileName = fileName;
-        st.sentencesNum = 0;
-        st.wordsNum = 0;
+        size_t sentencesNum = 0;
+        size_t wordsNum = 0;
 
         CoNLLUSentence sentence;
         size_t lines = 0;
@@ -302,8 +309,8 @@ bool CoNLLUDatabase::load(const std::string& fileName)
             {
                 if (!sentence.words.empty())
                 {
-                    ++st.sentencesNum;
-                    st.wordsNum += sentence.words.size();
+                    ++sentencesNum;
+                    wordsNum += sentence.words.size();
                     sentences.push_back(sentence);
                     sentence.words.clear();
                 }
@@ -311,15 +318,19 @@ bool CoNLLUDatabase::load(const std::string& fileName)
             }
 
             toLower(line);
-
-            std::vector<std::string> wordData = split(line, '\t');
+            
+            if (line.starts_with('\t'))
+            {
+                line = '0' + line; 
+            }
+            
+            std::vector<std::string> wordData = split(line, "\t");
+            
             if (wordData.size() > 3)
             {
                 // TODO: Filter foreign words
                 // TODO: Filter URLs
                 CoNLLUWord word = {0};
-
-                CompoundTag tag = {0};
 
                 // skip words counter wordData[0]
 
@@ -329,70 +340,85 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                 filterNumbers(wordData[2]);
                 word.initialWord = words.lookupOrInsert(wordData[2]);
 
-                tag.POS = posTags.lookup(fixTag(wordData[3]));
-                if (tag.POS > posTags.size())
+                bool needToFillFeatures = true;
+                size_t reassignCounter = 0;
+                while (needToFillFeatures)
                 {
-                    statistics.errors.insert("Unknown POS tag: '" + wordData[3] + "'.");
-                    tag.POS = posTags.lookup("x");
-                    sentence.words.push_back(word);
-                    continue;
-                }
+                    needToFillFeatures = false;
+                    CompoundTag tag = {0};
 
-                // optional
-                std::string featuresLine;
-                if (wordData.size() > 4) featuresLine += wordData[4];
-                if (wordData.size() > 5) featuresLine += '|' + wordData[5];
+                    const TagFeatures& posTag = posTags.lookup(fixTag(wordData[3]));
 
-                std::vector<std::string> features = split(featuresLine, '|');
-                std::sort(features.begin(), features.end());
-                size_t addedFeatures = 0;
-                for (auto featurePair: features)
-                {
-                    std::string name, value;
-                    if (!parsePair(featurePair, "=", name, value))
+                    tag.POS = posTag.index;
+                    if (!posTags.isValidIndex(tag.POS))
                     {
-                        statistics.errors.insert("Wrong feature pair '" + featurePair + "' for POS tag '" + wordData[3] + "'.");
+                        statistics.addMessage(fileName, "Unknown POS tag: '" + wordData[3] + "' -> 'x'.");
+                        wordData[3] = "x";
+                        continue;
+                    }
+                    
+                    std::string featuresLine;
+                    if (wordData.size() > 4 && wordData[4] != "_") featuresLine += wordData[4];
+                    if (wordData.size() > 5 && wordData[5] != "_") featuresLine += '|' + wordData[5];
+
+                    std::vector<std::string> features = split(featuresLine, "/|");
+                    std::sort(features.begin(), features.end());
+                    size_t addedFeatures = 0;
+                    for (auto featurePair: features)
+                    {
+                        std::string name, value;
+                        if (!parsePair(featurePair, "=", name, value))
+                        {
+                            statistics.addMessage(fileName, "Wrong feature pair without '=': '" + 
+                                                  featurePair + "' for POS tag '" + wordData[3] + "' in '" + featuresLine + "' .");
+                            continue;
+                        }
+
+                        std::string newPOS;
+                        if (name.empty() || value.empty() || !fixFeatureName(name, wordData[3], newPOS)|| !fixFeatureValue(value))
+                        {
+                            statistics.addMessage(fileName, "Ignored feature pair '" + featurePair + "' for POS tag '" + wordData[3] + "'.");
+                            if (!newPOS.empty())
+                            {
+                                statistics.addMessage(fileName, "New POS tag assigned: " +  wordData[3] + " -> " + newPOS + " for features '" + featuresLine + "'.");
+                                wordData[3] = newPOS;
+                                ++reassignCounter;
+                                needToFillFeatures = true;
+                                break;
+                            }
+                            continue;
+                        }
+
+                        ShortWordId fname = posTag.items.lookup(name);
+                        ShortWordId fvalue = featureValues.lookup(value);
+                        if (!posTag.items.isValidIndex(fname) || !featureValues.isValidIndex(fvalue))
+                        {
+                            statistics.addMessage(fileName, "Unknown feature pair '" + name + "=" + value + +"/" + featurePair + "' for POS tag '" + wordData[3] + "'. " + line);
+                        }
+                        else
+                        {
+                            tag.features[addedFeatures].featureNameId = fname;
+                            tag.features[addedFeatures].featureValueId = fvalue;
+                            ++addedFeatures;
+                        }
+
+                        if (addedFeatures >= sizeof(tag.features) / sizeof(tag.features[0]))
+                        {
+                            statistics.addMessage(fileName, "Maximum features number reached for POS tag '" + wordData[3] + "'.");
+                            break;
+                        }
+                    }
+
+                    if (needToFillFeatures)
+                    {
                         continue;
                     }
 
-                    std::string newPOS;
-                    if (name.empty() || value.empty() || !fixFeatureName(name, newPOS)|| !fixFeatureValue(value))
-                    {
-                        statistics.errors.insert("Ignored feature pair '" + featurePair + "' for POS tag '" + wordData[3] + "'.");
-                        if (!newPOS.empty()) tag.POS = posTags.lookup(newPOS);
-                        continue;
-                    }
-
-                    ShortWordId fname = featureNames.lookup(name);
-                    ShortWordId fvalue = featureValues.lookup(value);
-                    if (fname > featureNames.size() || fvalue > featureValues.size())
-                    {
-                        statistics.errors.insert("Unknown feature pair '" + name + "=" + value + +"/" + featurePair + "' for POS tag '" + wordData[3] + "'.");
-                    }
-                    else
-                    {
-                        tag.features[addedFeatures].featureNameId = fname;
-                        tag.features[addedFeatures].featureValueId = fvalue;
-                        ++addedFeatures;
-                    }
-
-                    if (addedFeatures >= sizeof(tag.features) / sizeof(tag.features[0]))
-                    {
-                        statistics.errors.insert("Maximum features number reached for POS tag '" + wordData[3] + "'.");
-                        break;
-                    }
+                    statistics.updateMaxFeaturesNum(addedFeatures);
+                    
+                    word.tags = tags.lookupOrInsert(tag);
                 }
-                if (addedFeatures > statistics.maxFeaturesNum)
-                {
-                    statistics.maxFeaturesNum = addedFeatures;
-                    statistics.errors.insert("File: " + fileName + ": maximum size '" +
-                                             std::to_string(statistics.maxFeaturesNum) +
-                                             "' found for line '" + featuresLine + "'.");
-                }
-
-
-                word.tags = tags.lookupOrInsert(tag);
-
+                
                 try
                 {
                     if (wordData.size() > 6) word.depHead = std::stoul(wordData[6]);
@@ -413,9 +439,10 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                     }
 
                     ShortWordId depRel = depRels.lookup(depRelMain);
-                    if (depRel > depRels.size())
+                    if (!depRels.isValidIndex(depRel))
                     {
-                        statistics.errors.insert("Unknown dependency relation '" + depRelMain + "' for POS tag '" + wordData[3] + "'." );
+//                        statistics.addMessage(fileName, 
+//                            "Unknown dependency relation '" + depRelMain + "' for POS tag '" + wordData[3] + "'." );
                     }
                     else
                     {
@@ -423,9 +450,10 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                     }
 
                     ShortWordId depRelModifier = depRelModifiers.lookup(depRelMod);
-                    if (depRelModifier > depRelModifiers.size())
+                    if (!depRelModifiers.isValidIndex(depRelModifier))
                     {
-                        statistics.errors.insert("Unknown dependency relation modifier '" + depRelMain + ": " + depRelMod + "' for POS tag '" + wordData[3] + "'.");
+//                        statistics.addMessage(fileName, 
+//                            "Unknown dependency relation modifier '" + depRelMain + ": " + depRelMod + "' for POS tag '" + wordData[3] + "'.");
                     }
                     else
                     {
@@ -439,27 +467,28 @@ bool CoNLLUDatabase::load(const std::string& fileName)
 
         if (!sentence.words.empty())
         {
-            ++st.sentencesNum;
-            st.wordsNum += sentence.words.size();
+            ++sentencesNum;
+            wordsNum += sentence.words.size();
             sentences.push_back(sentence);
             sentence.words.clear();
         }
 
-        statistics.files.push_back(st);
+        statistics.addFile(fileName, sentencesNum, wordsNum);
     }
     else
     {
-        statistics.errors.insert("Failed to open " + fileName + ".");
+        statistics.addMessage(fileName, "Failed to open.");
+        return false;
     }
 
-    return false;
+    return true;
 }
 
 bool CoNLLUDatabase::loadDirectory(const std::string& path)
 {
     if (!std::filesystem::exists(path))
     {
-        statistics.errors.insert("Failed to open " + path + ".");
+        statistics.addMessage(path, "Failed to open.");
         return false;
     }
 
@@ -472,6 +501,7 @@ bool CoNLLUDatabase::loadDirectory(const std::string& path)
     {
         if (std::filesystem::is_regular_file(dir_entry))
         {
+            // TODO: make it multithreaded
             load(dir_entry.path());
             continue;
         }
@@ -499,23 +529,17 @@ const std::string& CoNLLUDatabase::index2word(const WordId ix) const
 WordId CoNLLUDatabase::word2index(const std::string& word) const
 {
     WordId res = words.lookup(word);
-    if (res > words.size())
+    if (words.isValidIndex(res))
     {
-        return unknownWord.word;
+        return res;
     }
 
-    return res;
+    return unknownWord.word;
 }
 
 void CoNLLUDatabase::printStatistics(void)
 {
     std::cout << "Database statistics:" << std::endl;
-
-    std::cout << "Bits for POS tag: " << posTags.bits() << std::endl;
-    std::cout << "Bits for feature name: " << featureNames.bits() << std::endl;
-    std::cout << "Bits for feature value: " << featureValues.bits() << std::endl;
-    std::cout << "Bits for dependency relation: " << depRels.bits() << std::endl;
-    std::cout << "Bits for dependency relation modifiers: " << depRelModifiers.bits() << std::endl;
 
     std::cout << "Sentences: " << sentences.size() << "." << std::endl;
     std::cout << "Words: " << words.size() << "." << std::endl;
@@ -616,7 +640,7 @@ std::vector<std::string> CoNLLUDatabase::tokenize(const std::string& sentence)
 {
     std::string s(sentence);
     toLower(s);
-    return split(s, ' ');
+    return split(s, " \t");
 }
 
 std::vector<std::string> CoNLLUDatabase::tag(const std::vector<std::string>& sentence)
@@ -626,7 +650,7 @@ std::vector<std::string> CoNLLUDatabase::tag(const std::vector<std::string>& sen
     for (size_t i = 0; i < sentence.size(); ++i)
     {
         encoded[i] = words.lookup(sentence[i]);
-        if (encoded[i] > words.size())
+        if (!words.isValidIndex(encoded[i]))
         {
             encoded[i] = unknownWord.word;
         }
@@ -646,7 +670,7 @@ std::vector<std::string> CoNLLUDatabase::tag(const std::vector<std::string>& sen
             if (tag.features[f].featureNameId == 0)
                 break;
 
-            s += featureNames.lookupIndex(tag.features[f].featureNameId) + "=" + featureValues.lookupIndex(tag.features[f].featureValueId) + ", ";
+            //s += featureNames.lookupIndex(tag.features[f].featureNameId) + "=" + featureValues.lookupIndex(tag.features[f].featureValueId) + ", ";
         }
 
         res[i] = s;

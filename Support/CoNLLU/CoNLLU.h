@@ -21,7 +21,11 @@ class BidirectionalMap
 
 public:
     BidirectionalMap() {};
+    
     BidirectionalMap(const std::vector<Item> items);
+    
+    template<typename Initializer>
+    BidirectionalMap(const std::vector<Initializer> initializers);
 
     void clear(void);
 
@@ -31,10 +35,33 @@ public:
     const Index lookupOrInsert(const Item& item);
     const Index lookup(const Item& item) const;
     const Item& lookupIndex(const Index index) const;
+    bool isValidIndex(const Index index) const;
 
     void saveBinary(std::ostream& stream) const;
     void loadBinary(std::istream& stream);
 };
+
+struct TagDescription
+{
+    std::string name;
+    std::vector<std::string> items;
+};
+
+struct TagFeatures
+{
+    size_t index;
+    const BidirectionalMap<std::string, ShortWordId> items;
+    
+    TagFeatures(size_t _index, const std::vector<std::string> _items)
+        : index(_index), items(_items) {};
+    TagFeatures(size_t _index)
+        : index(_index) {};
+    
+    bool operator!=(const TagFeatures& other) const { return index != other.index; };
+    
+    operator size_t() const { return index; };
+};
+
 
 class CoNLLUDatabase
 {
@@ -42,8 +69,7 @@ class CoNLLUDatabase
 
     Statistics statistics;
 
-    const BidirectionalMap<std::string, ShortWordId> posTags;
-    const BidirectionalMap<std::string, ShortWordId> featureNames;
+    const BidirectionalMap<std::string, TagFeatures> posTags;
     const BidirectionalMap<std::string, ShortWordId> featureValues;
     const BidirectionalMap<std::string, ShortWordId> depRels;
     const BidirectionalMap<std::string, ShortWordId> depRelModifiers;
