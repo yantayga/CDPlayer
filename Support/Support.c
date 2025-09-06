@@ -1,5 +1,5 @@
-#include "CoNLLUci.h"
-#include "CoNLLU.h"
+#include "Support.h"
+#include "CoNLLU/CoNLLU.h"
 
 DBHandle initCoNLLUDB()
 {

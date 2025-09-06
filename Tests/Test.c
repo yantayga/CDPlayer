@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "../CoNLLU/CoNLLUci.h"
+#include "../Support/Support.h"
 
 int main(int argc, char** argv)
 {

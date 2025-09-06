@@ -28,3 +28,5 @@ report.html
 *.so
 .gdb_history
 *.profile
+test*
+*.bin

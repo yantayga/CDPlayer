@@ -1,5 +1,5 @@
 #include "CoNLLUSentence.h"
-#include "Serialize.h"
+#include "../Serialize/Serialize.h"
 
 void CoNLLUSentence::saveBinary(std::ostream& stream) const
 {

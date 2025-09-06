@@ -1,5 +1,5 @@
 #include "CoNLLU.h"
-#include "Serialize.h"
+#include "../Serialize/Serialize.h"
 
 #include <sstream>
 #include <fstream>

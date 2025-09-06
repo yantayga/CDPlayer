@@ -1,11 +1,8 @@
-lib-hmm: HMM/*
-	g++ -Wall -Wpedantic -shared -fPIC -std=c++23 HMM/Matrix.cpp HMM/HMM.cpp -o libhmm.so -g -O4
-
-lib-conllu: lib-hmm CoNLLU/*
-	g++ -Wall -Wpedantic -shared -fPIC -std=c++23 CoNLLU/CoNLLU.cpp  CoNLLU/CoNLLUSentence.cpp CoNLLU/Statistics.cpp CoNLLU/CoNLLUci.c CoNLLU/Serialize.cpp CoNLLU/HMM.cpp `pkg-config --libs --cflags icu-uc icu-io` -lgzstream -lz -lhmm -L. -o libconllu.so -g -O4
+lib-conllu: Support/*
+	g++ -Wall -Wpedantic -shared -fPIC -std=c++23 Support/CoNLLU/CoNLLU.cpp  Support/CoNLLU/CoNLLUSentence.cpp Support/CoNLLU/Statistics.cpp Support/Serialize/Serialize.cpp Support/CoNLLU/HMM.cpp Support/HMM/Matrix.cpp Support/HMM/HMM.cpp Support/Support.c `pkg-config --libs --cflags icu-uc icu-io` -lgzstream -lz -L. -o libsupport.so -g -O4
 
 test-conllu: lib-conllu Tests/Test.c
-	gcc -Wall -Wpedantic Tests/Test.c -lconllu -L. -o test-conllu -O4
+	gcc -Wall -Wpedantic Tests/Test.c -lsupport -L. -o test-conllu -O4
 
 test-conllu-hs: lib-conllu Tests/Main.hs
 	ghc -no-keep-hi-files -no-keep-o-files -Wall -Wextra -lconllu -L. -O4 Tests/Main.hs -o test-conllu-hs

@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "Types.h"
+#include "CoNLLU/Types.h"
 
 #ifdef __cplusplus
 extern "C" {

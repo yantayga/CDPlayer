@@ -6,7 +6,6 @@
 #include <x86intrin.h>
 
 #include "Types.h"
-#include "CoNLLUci.h"
 
 struct CoNLLUWord
 {
