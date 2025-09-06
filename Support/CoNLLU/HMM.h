@@ -15,9 +15,10 @@ class CoNLLUHMM
 public:
     CoNLLUHMM() {};
 
-    void train(CoNLLUDatabase& db, double smoothingFactor);
+    void train(const CoNLLUDatabase& db, double smoothingFactor);
 
     std::vector<TagId> predict(std::vector<WordId> emissions) const;
 
     void saveBinary(std::ostream& stream) const;
+    void loadBinary(const CoNLLUDatabase& db, std::istream& stream);
 };

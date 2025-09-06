@@ -118,7 +118,7 @@ void CoNLLUDatabase::reset(void)
     statistics.errors.clear();
     statistics.maxFeaturesNum = 0;
 
-    
+
     serviceTag = words.lookupOrInsert(defServiceTag);
     CompoundTag t;
     tags.lookupOrInsert(t);
@@ -311,7 +311,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
             }
 
             toLower(line);
-            
+
             std::vector<std::string> wordData = split(line, '\t');
             if (wordData.size() > 3)
             {
@@ -455,15 +455,20 @@ bool CoNLLUDatabase::load(const std::string& fileName)
     return false;
 }
 
-bool CoNLLUDatabase::loadDirectory(const std::string& directoryName)
+bool CoNLLUDatabase::loadDirectory(const std::string& path)
 {
-    if (!std::filesystem::exists(directoryName))
+    if (!std::filesystem::exists(path))
     {
-        statistics.errors.insert("Failed to open " + directoryName + ".");
+        statistics.errors.insert("Failed to open " + path + ".");
         return false;
     }
 
-    for (auto const& dir_entry : std::filesystem::recursive_directory_iterator{directoryName})
+    if (!std::filesystem::is_directory(path))
+    {
+        return load(path);
+    }
+
+    for (auto const& dir_entry : std::filesystem::recursive_directory_iterator{path})
     {
         if (std::filesystem::is_regular_file(dir_entry))
         {
@@ -538,13 +543,16 @@ bool CoNLLUDatabase::loadBinary(const std::string& fileName, bool useSentences)
 
         tags.loadBinary(stream);
 
-        size_t size = 0;
-        deserialize(stream, size);
+        hmm.loadBinary(*this, stream);
 
         if (useSentences)
         {
+            size_t size = 0;
+            deserialize(stream, size);
+
             sentences.resize(size);
 
+            std::cout << "CSentences to load: " << size << std::endl;
             for (size_t i = 0; i < size; ++i)
             {
                 sentences[i].loadBinary(stream);

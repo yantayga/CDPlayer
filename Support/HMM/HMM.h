@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "Matrix.h"
+#include "../Serialize/Serialize.h"
 
 template<typename N, typename HS, typename ES>
 class HMM
@@ -91,4 +92,16 @@ public:
 
         return res;
     };
+
+    void saveBinary(std::ostream& stream) const
+    {
+        hss2hs.saveBinary(stream);
+        hss2es.saveBinary(stream);
+    }
+
+    void loadBinary(std::istream& stream)
+    {
+        hss2hs.loadBinary(stream);
+        hss2es.loadBinary(stream);
+    }
 };
