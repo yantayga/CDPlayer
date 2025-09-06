@@ -312,8 +312,6 @@ bool CoNLLUDatabase::load(const std::string& fileName)
 
             toLower(line);
             
-            //std::cout << line << std::endl;
-
             std::vector<std::string> wordData = split(line, '\t');
             if (wordData.size() > 3)
             {
@@ -603,7 +601,6 @@ bool CoNLLUDatabase::saveBinary(const std::string& fileName, bool useSentences) 
 
 void CoNLLUDatabase::train(double smoothingFactor)
 {
-    //std::cout << "SENTENCES " << " = " << sentences.size() << std::endl;
     hmm.train(*this, smoothingFactor);
 }
 
@@ -616,43 +613,24 @@ std::vector<std::string> CoNLLUDatabase::tokenize(const std::string& sentence)
 
 std::vector<std::string> CoNLLUDatabase::tag(const std::vector<std::string>& sentence)
 {
-    /*
-    for (size_t i = 0; i < words.size(); ++i)
-    {
-        std::cout << "word " << i << " = " << words.lookupIndex(i) << std::endl;
-    }
-    
-    for (size_t i = 0; i < tags.size(); ++i)
-    {
-        std::cout << "tag " << i << " = " << tags.lookupIndex(i).POS << " " << posTags.lookupIndex(tags.lookupIndex(i).POS) << std::endl;
-    }
-    */
     std::vector<WordId> encoded(sentence.size());
 
     for (size_t i = 0; i < sentence.size(); ++i)
     {
         encoded[i] = words.lookup(sentence[i]);
-        std::cout << sentence[i] << " -> " << encoded[i] << std::endl;
         if (encoded[i] > words.size())
+        {
             encoded[i] = unknownWord.word;
+        }
     }
 
     std::vector<TagId> predicted = hmm.predict(encoded);
 
     std::vector<std::string> res(predicted.size());
 
-    std::cout << "tags " << tags.size() << ", words " << words.size() << std::endl;
-    std::cout << "posTags " << posTags.size() << ", featureNames " << featureNames.size() << ", featureValues " << featureValues.size() << std::endl;
     for (size_t i = 0; i < predicted.size(); ++i)
     {
         CompoundTag tag = tags.lookupIndex(predicted[i]);
-
-        std::cout << sentence[i] << " -> " << predicted[i] << " -> " << int(tag.POS) << std::endl;
-        for (size_t f = 0; f < MAX_FEATURES_PER_WORD; ++f)
-        {
-            std::cout << int(tag.features[f].featureNameId) << ":" << int(tag.features[f].featureValueId) << ", ";
-        }
-        std::cout  << std::endl;
 
         std::string s = sentence[i] + ": " + posTags.lookupIndex(tag.POS) + ": ";
         for (size_t f = 0; f < MAX_FEATURES_PER_WORD; ++f)
