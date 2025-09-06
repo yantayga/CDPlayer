@@ -71,7 +71,7 @@ public:
         for (size_t i = 0; i < rows; ++i)
         {
             const size_t rowStart = i * cols;
-            std::for_each(&data[rowStart], &data[rowStart + cols], [&](N &n) { n += smoothingFactor; n /= (rowSums[i] + smoothingFactor); });
+            std::for_each(&data[rowStart], &data[rowStart + cols], [&](N &n) { n += smoothingFactor; n /= (rowSums[i] + smoothingFactor * cols); });
         }
     }
 
@@ -80,7 +80,7 @@ public:
         for (size_t i = 0; i < rows; ++i)
         {
             const size_t rowStart = i * cols;
-            std::for_each(&data[rowStart], &data[rowStart + cols], [&](N &n) { n *= (rowSums[i] - smoothingFactor); n-= smoothingFactor; });
+            std::for_each(&data[rowStart], &data[rowStart + cols], [&](N &n) { n *= (rowSums[i] - smoothingFactor); n-= smoothingFactor * cols; });
         }
     }
 
