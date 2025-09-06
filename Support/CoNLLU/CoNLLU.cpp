@@ -239,6 +239,11 @@ bool fixFeatureName(std::string& s, const std::string& oldpos, std::string& pos)
         pos = "verb";
         return false;
     }
+    if (oldpos == "adj" && s == "nametype") 
+    {
+        pos = "propn";
+        return false;
+    }
     if (s.starts_with("predic"))
     {
         // skip
@@ -393,7 +398,7 @@ bool CoNLLUDatabase::load(const std::string& fileName)
                         ShortWordId fvalue = featureValues.lookup(value);
                         if (!posTag.items.isValidIndex(fname) || !featureValues.isValidIndex(fvalue))
                         {
-                            statistics.addMessage(fileName, "Unknown feature pair '" + name + "=" + value + +"/" + featurePair + "' for POS tag '" + wordData[3] + "'. " + line);
+                            statistics.addMessage(fileName, "Unknown feature pair '" + name + "=" + value + +"/" + featurePair + "' for POS tag '" + wordData[3] + "'.");
                         }
                         else
                         {

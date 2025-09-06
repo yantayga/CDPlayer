@@ -10,18 +10,18 @@ const std::vector<std::string> ADP_FEATURES =   {"typo", "hyph", "style", "abbr"
 const std::vector<std::string> ADV_FEATURES =   {"typo", "hyph", "style", "abbr", "anom", "polarity", "degree", "numtype", "numform", "variant", };
 const std::vector<std::string> AUX_FEATURES =   {"typo", "hyph", "gender", "verbform", "mood", "tense", "number", "case", "aspect", "voice", "person", };
 const std::vector<std::string> CCONJ_FEATURES = {"typo", "hyph", "polarity", };
-const std::vector<std::string> DET_FEATURES =   {"typo", "hyph", "abbr", "anom", "gender", "number", "case", "variant", };
-const std::vector<std::string> INTJ_FEATURES =  {"typo", "hyph", "anom", };
+const std::vector<std::string> DET_FEATURES =   {"typo", "hyph", "abbr", "anom", "gender", "number", "case", "person", "variant", };
+const std::vector<std::string> INTJ_FEATURES =  {"typo", "hyph", "anom", "foreign", };
 const std::vector<std::string> NOUN_FEATURES =  {"typo", "hyph", "style", "abbr", "anom", "gender", "animacy",
                                                  "number", "case", "nametype", "numtype", "numform", "decl", };
-const std::vector<std::string> NUM_FEATURES =   {"typo", "hyph", "numtype", "gender", "number", "case", "numform", };
+const std::vector<std::string> NUM_FEATURES =   {"typo", "hyph", "abbr", "numtype", "gender", "number", "case", "numform", };
 const std::vector<std::string> PART_FEATURES =  {"typo", "hyph", "style", "anom", "polarity", "mood", };
-const std::vector<std::string> PRON_FEATURES =  {"typo", "hyph", "style", "abbr", "prontype", "polarity", "reflex", "gender", "number", "case", "person", };
+const std::vector<std::string> PRON_FEATURES =  {"typo", "hyph", "style", "abbr", "anom", "prontype", "polarity", "reflex", "gender", "number", "case", "person", };
 const std::vector<std::string> PROPN_FEATURES = {"typo", "hyph", "style", "abbr", "anom", "foreign", "nametype", "gender", "animacy", "number", "case", "numtype", };
 const std::vector<std::string> PUNCT_FEATURES = EMPTY_FEATURES;
 const std::vector<std::string> SCONJ_FEATURES = {"typo", "hyph", "polarity", "mood", };
 const std::vector<std::string> SYM_FEATURES =   {"numtype", };
-const std::vector<std::string> VERB_FEATURES =  {"typo", "hyph", "style", "abbr", "anom", "gender", "verbform", "mood", "tense", "gender", 
+const std::vector<std::string> VERB_FEATURES =  {"typo", "hyph", "style", "abbr", "anom", "degree", "gender", "verbform", "mood", "tense", "gender", 
                                                  "number", "case", "aspect", "voice", "person", "subcat", "variant", };
 
 const std::vector<TagDescription> TAG_DESCRIPTIONS = {
